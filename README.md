@@ -1,76 +1,80 @@
-# 🚀 WorkEase – Local Worker Booking System
+# WorkEase – Local Worker Booking System
 
-WorkEase is a full-stack MERN-based local worker booking platform that connects users with skilled workers for home and personal services. The platform provides real-time tracking, secure authentication, online payments, booking management, and modern responsive UI.
-
----
-
-# ✨ Features
-
-- 🔐 JWT Authentication & Authorization
-- 👨‍🔧 Worker Profile Management
-- 📅 Service Booking System
-- 📍 Real-Time Worker Tracking
-- 💳 Razorpay Payment Integration
-- 🔔 Live Notifications
-- 💬 Real-Time Communication using Socket.IO
-- ⭐ Review & Rating System
-- 📱 Fully Responsive Design
-- ⚡ Fast & Modern UI/UX
+WorkEase is a full-stack MERN-based local worker booking platform that connects users with skilled workers for home and personal services. The platform provides real-time tracking, secure authentication, online payments, booking management, and a modern responsive user interface.
 
 ---
 
-# 🛠️ Service Categories
+## Features
 
-- Home Services
-- Household Work
-- Pick & Drop Services
-- Personal Assistance
-- Roadside Assistance
-- Home Appliances Repair
-
----
-
-# 🧑‍💻 Tech Stack
-
-## Frontend
-- React.js
-- TypeScript
-- Tailwind CSS
-- Axios
-- React Router
-- Framer Motion
-- React Leaflet
-
-## Backend
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
-- JWT Authentication
-- Socket.IO
-
-## Payment Gateway
-- Razorpay
-
-## APIs & Services
-- HTML5 Geolocation API
-- OSRM API
+* JWT Authentication & Authorization
+* Worker Profile Management
+* Service Booking System
+* Real-Time Worker Tracking
+* Razorpay Payment Integration
+* Live Notifications
+* Real-Time Communication using Socket.IO
+* Review & Rating System
+* Fully Responsive Design
+* Fast and Modern UI/UX
 
 ---
 
-# 📍 Real-Time Tracking System
+## Service Categories
+
+* Home Services
+* Household Work
+* Pick & Drop Services
+* Personal Assistance
+* Roadside Assistance
+* Home Appliances Repair
+
+---
+
+## Tech Stack
+
+### Frontend
+
+* React.js
+* TypeScript
+* Tailwind CSS
+* Axios
+* React Router
+* Framer Motion
+* React Leaflet
+
+### Backend
+
+* Node.js
+* Express.js
+* MongoDB
+* Mongoose
+* JWT Authentication
+* Socket.IO
+
+### Payment Gateway
+
+* Razorpay
+
+### APIs & Services
+
+* HTML5 Geolocation API
+* OSRM API
+
+---
+
+## Real-Time Tracking System
 
 WorkEase provides live worker tracking using:
 
-- HTML5 Geolocation API
-- Socket.IO Real-Time Updates
-- OSRM Route Visualization
-- React Leaflet Maps
-- ETA & Distance Calculation
+* HTML5 Geolocation API
+* Socket.IO Real-Time Updates
+* OSRM Route Visualization
+* React Leaflet Maps
+* ETA and Distance Calculation
 
 ---
 
-# 📂 Project Structure
+## Project Structure
 
 ```bash
 WorkEase-local-worker-booking-system/
@@ -93,13 +97,15 @@ WorkEase-local-worker-booking-system/
 
 ---
 
-# ⚙️ Installation
+## Installation
 
-## Clone Repository
+### Clone Repository
 
 ```bash
 git clone https://github.com/Sanket-wani-08/WorkEase-local-worker-booking-system.git
 ```
+
+---
 
 ## Frontend Setup
 
@@ -108,6 +114,8 @@ cd frontend
 npm install
 npm run dev
 ```
+
+---
 
 ## Backend Setup
 
@@ -119,9 +127,9 @@ npm start
 
 ---
 
-# 🔑 Environment Variables
+## Environment Variables
 
-Create a `.env` file inside backend folder:
+Create a `.env` file inside the backend folder:
 
 ```env
 MONGO_URI=your_mongodb_uri
@@ -133,47 +141,62 @@ CLIENT_URL=http://localhost:5173
 
 ---
 
-# 📸 Screenshots
+## Screenshots
 
-## 🏠 Home Page
-![Home](frontend/public/screenshots/home.png)
+### Home Page
 
-## 📅 Booking Page
-![Booking](frontend/public/screenshots/booking.png)
+```bash
+frontend/public/screenshots/home.png
+```
 
-## 👨‍🔧 Worker Dashboard
-![Dashboard](frontend/public/screenshots/dashboard.png)
+### Booking Page
 
-## 📍 Live Tracking
-![Tracking](frontend/public/screenshots/tracking.png)
+```bash
+frontend/public/screenshots/booking.png
+```
 
----
+### Worker Dashboard
 
-# 🚀 Future Enhancements
+```bash
+frontend/public/screenshots/dashboard.png
+```
 
-- AI-based Worker Recommendations
-- Video Calling Support
-- In-App Chat System
-- Multi-Language Support
-- Push Notifications
-- Advanced Analytics Dashboard
+### Live Tracking
 
----
-
-# 👨‍💻 Author
-
-## Wani Sanket Rajeshbhai
-
-- Full Stack MERN Developer
-- Gujarat Technological University
-
-### 🔗 Connect With Me
-
-- GitHub: https://github.com/Sanket-wani-08
-- LinkedIn: https://www.linkedin.com/in/sanket-wani-1a494221a/
+```bash
+frontend/public/screenshots/tracking.png
+```
 
 ---
 
-# 📜 License
+## Future Enhancements
+
+* AI-Based Worker Recommendations
+* Video Calling Support
+* In-App Chat System
+* Multi-Language Support
+* Push Notifications
+* Advanced Analytics Dashboard
+
+---
+
+## Author
+
+### Wani Sanket Rajeshbhai
+
+Full Stack MERN Developer
+Gujarat Technological University
+
+---
+
+## Connect With Me
+
+GitHub: [Sanket-wani-08 GitHub](https://github.com/Sanket-wani-08?utm_source=chatgpt.com)
+
+LinkedIn: [Sanket Wani LinkedIn](https://www.linkedin.com/in/sanket-wani-1a494221a/?utm_source=chatgpt.com)
+
+---
+
+## License
 
 This project is licensed under the MIT License.
