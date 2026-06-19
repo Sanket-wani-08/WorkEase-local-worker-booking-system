@@ -284,7 +284,7 @@ const Workers = () => {
                       <img 
                         src={selectedWorker.aadhaarImage.startsWith('http') 
                           ? selectedWorker.aadhaarImage 
-                          : `http://localhost:5000/${selectedWorker.aadhaarImage.replace(/\\/g, '/')}`} 
+                          : `https://workease-backend-zwsf.onrender.com${selectedWorker.aadhaarImage.replace(/\\/g, '/')}`} 
                         className="w-full h-auto grayscale group-hover:grayscale-0 transition-all duration-500 min-h-[200px] object-contain"
                         alt="Aadhaar ID Proof"
                         onError={(e: any) => {
@@ -303,7 +303,7 @@ const Workers = () => {
                         <a 
                           href={selectedWorker.aadhaarImage.startsWith('http') 
                             ? selectedWorker.aadhaarImage 
-                            : `http://localhost:5000/${selectedWorker.aadhaarImage.replace(/\\/g, '/')}`} 
+                            : `https://workease-backend-zwsf.onrender.com${selectedWorker.aadhaarImage.replace(/\\/g, '/')}`} 
                           target="_blank" 
                           rel="noreferrer" 
                           className="btn-primary py-2 px-6 shadow-2xl"

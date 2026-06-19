@@ -376,7 +376,7 @@ const Dashboard = () => {
                         onClick={() => {
                           const imageUrl = worker.aadhaarImage.startsWith("http")
                             ? worker.aadhaarImage
-                            : `http://localhost:5000${worker.aadhaarImage}`;
+                            : `https://workease-backend-zwsf.onrender.com${worker.aadhaarImage}`;
                           setSelectedIdImage(imageUrl);
                         }}
                         className="px-4 py-2 bg-accent/20 text-accent hover:bg-accent/30 rounded-lg text-sm font-medium transition-colors"
