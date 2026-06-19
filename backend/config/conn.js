@@ -1,17 +1,14 @@
 import mongoose from "mongoose";
-import "dotenv/config";
+import dns from "dns";
 
-const mongo_url = process.env.MONGO_URL;
+dns.setServers(["1.1.1.1"]);
 
 export const conn = async () => {
-    try {
-        await mongoose.connect(mongo_url, {
-            serverSelectionTimeoutMS: 5000,
-        });
-        console.log("Mongodb Connected Successfully");
+  try {
+    await mongoose.connect(process.env.MONGO_URL);
 
-    } catch (err) {
-        console.error("❌ Mongodb connection failed:", err.message);
-        throw err;
-    }
+    console.log("MongoDB Connected Successfully");
+  } catch (error) {
+    console.log("MongoDB Connection Error:", error);
+  }
 };
