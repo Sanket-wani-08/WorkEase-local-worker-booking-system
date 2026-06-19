@@ -1,4 +1,4 @@
-import { ShieldCheck, Clock, Star, Users } from "lucide-react";
+import { Clock, Star, Users } from "lucide-react";
 import { motion } from "framer-motion";
 
 const features = [

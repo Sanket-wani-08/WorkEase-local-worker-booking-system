@@ -139,7 +139,7 @@ const Profile = () => {
                             <div className="text-center md:text-left flex-1">
                                 <h1 className="text-3xl font-black text-white mb-1">{profile?.name}</h1>
                                 <p className="text-slate-400 font-medium capitalize">
-                                    {role === "admin" ? (
+                                    {String(role) === "admin" ? (
                                         <span className="text-accent font-black uppercase tracking-widest text-xs">Administrator Control</span>
                                     ) : (
                                         `${role} Account`

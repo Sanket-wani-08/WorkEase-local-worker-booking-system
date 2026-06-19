@@ -4,9 +4,25 @@ import toast from "react-hot-toast";
 import API from "../api/axios";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import { Calendar, Phone, MapPin, CreditCard, ChevronRight, CheckCircle2, Navigation, Map as MapIcon, Loader2 } from "lucide-react";
+import {
+  Calendar,
+  Phone,
+  MapPin,
+  CreditCard,
+  ChevronRight,
+  CheckCircle2,
+  Navigation,
+  Map as MapIcon,
+  Loader2,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMapEvents,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -15,16 +31,26 @@ const customIcon = L.icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/9131/9131529.png",
   iconSize: [45, 45],
   iconAnchor: [22, 45],
-  popupAnchor: [0, -45]
+  popupAnchor: [0, -45],
 });
 
-const LocationMarker = ({ position, setPosition, setAddress }: { position: [number, number], setPosition: (pos: [number, number]) => void, setAddress: (addr: string) => void }) => {
+const LocationMarker = ({
+  position,
+  setPosition,
+  setAddress,
+}: {
+  position: [number, number];
+  setPosition: (pos: [number, number]) => void;
+  setAddress: (addr: string) => void;
+}) => {
   const map = useMapEvents({
     click(e) {
       const newPos: [number, number] = [e.latlng.lat, e.latlng.lng];
       setPosition(newPos);
       map.flyTo(e.latlng, map.getZoom());
-      setAddress(`Map Location: ${newPos[0].toFixed(4)}, ${newPos[1].toFixed(4)}`);
+      setAddress(
+        `Map Location: ${newPos[0].toFixed(4)}, ${newPos[1].toFixed(4)}`,
+      );
     },
   });
 
@@ -55,10 +81,10 @@ const CenterMap = ({ center }: { center: [number, number] }) => {
 };
 
 const subcategoryPrices: Record<string, number> = {
-  "Electrician": 150,
-  "Plumber": 200,
+  Electrician: 150,
+  Plumber: 200,
   "AC Service": 450,
-  "Carpenter": 250,
+  Carpenter: 250,
   "Gas Repair": 200,
   "Sewage Cleaning": 600,
   "Deep Cleaning": 1800,
@@ -84,7 +110,7 @@ const subcategoryPrices: Record<string, number> = {
   "TV Repair": 500,
   "Microwave Repair": 300,
   "Water Purifier Repair": 250,
-  "Geyser Repair": 200
+  "Geyser Repair": 200,
 };
 
 const Booking = () => {
@@ -108,10 +134,12 @@ const Booking = () => {
     bookingDate: "",
     paymentMethod: "COD",
     subcategory: "",
-    totalAmount: 199 // base price
+    totalAmount: 199, // base price
   });
 
-  const [selectedLocation, setSelectedLocation] = useState<[number, number]>([23.0225, 72.5714]);
+  const [selectedLocation, setSelectedLocation] = useState<[number, number]>([
+    23.0225, 72.5714,
+  ]);
 
   useEffect(() => {
     const token = localStorage.getItem("userToken");
@@ -124,21 +152,32 @@ const Booking = () => {
     const fetchWorkerAndKey = async () => {
       try {
         const [workerRes, keyRes, catRes] = await Promise.all([
-          !isBroadcast ? API.get(`/workers/search`) : Promise.resolve({ data: [] }),
+          !isBroadcast
+            ? API.get(`/workers/search`)
+            : Promise.resolve({ data: [] }),
           API.get("/bookings/razorpay-key"),
-          API.get("/categories")
+          API.get("/categories"),
         ]);
-        
+
         if (!isBroadcast) {
           const foundWorker = workerRes.data.find((w: any) => w._id === id);
           setWorker(foundWorker);
-          setForm((prev: any) => ({ ...prev, totalAmount: foundWorker?.price || 199 }));
+          setForm((prev: any) => ({
+            ...prev,
+            totalAmount: foundWorker?.price || 199,
+          }));
           // get subcategories for this worker's category
-          const workerCat = catRes.data.find((c: any) => c.name === foundWorker?.category);
+          const workerCat = catRes.data.find(
+            (c: any) => c.name === foundWorker?.category,
+          );
           if (workerCat) setSubcategories(workerCat.subcategories || []);
         } else {
           const price = subcategoryPrices[categoryParam || ""] || 199;
-          setWorker({ name: `All ${categoryParam} Experts`, category: categoryParam, price: price });
+          setWorker({
+            name: `All ${categoryParam} Experts`,
+            category: categoryParam,
+            price: price,
+          });
           setForm((prev: any) => ({ ...prev, totalAmount: price }));
           // get subcategories for the category param
           const cat = catRes.data.find((c: any) => c.name === categoryParam);
@@ -154,7 +193,12 @@ const Booking = () => {
 
   // auto-geocoding
   useEffect(() => {
-    if (!form.address || form.address.length < 5 || form.address === "Current GPS Location Detected") return;
+    if (
+      !form.address ||
+      form.address.length < 5 ||
+      form.address === "Current GPS Location Detected"
+    )
+      return;
 
     const delayDebounceFn = setTimeout(async () => {
       try {
@@ -163,9 +207,9 @@ const Booking = () => {
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(form.address)}&limit=1`,
           {
             headers: {
-              'User-Agent': 'WorkEase-App'
-            }
-          }
+              "User-Agent": "WorkEase-App",
+            },
+          },
         );
         const data = await response.json();
         if (data && data.length > 0) {
@@ -188,7 +232,10 @@ const Booking = () => {
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setSelectedLocation([latitude, longitude]);
-        setForm(prev => ({ ...prev, address: "Current GPS Location Detected" }));
+        setForm((prev: any) => ({
+          ...prev,
+          address: "Current GPS Location Detected",
+        }));
         setGettingLocation(false);
         toast.success("Location captured!");
       },
@@ -197,25 +244,30 @@ const Booking = () => {
         setGettingLocation(false);
         toast.error("Failed to get location. Please enable GPS.");
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true },
     );
   };
 
-  const verifyPayment = useCallback(async (response: any, bookingId: string) => {
-    try {
-      await API.post("/bookings/verify-payment", {
-        ...response,
-        bookingId
-      });
-      toast.success("Payment Successful!");
-      navigate(`/tracking/${bookingId}`);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "Payment verification failed");
-    } finally {
-      setLoading(false);
-    }
-  }, [navigate]);
+  const verifyPayment = useCallback(
+    async (response: any, bookingId: string) => {
+      try {
+        await API.post("/bookings/verify-payment", {
+          ...response,
+          bookingId,
+        });
+        toast.success("Payment Successful!");
+        navigate(`/tracking/${bookingId}`);
+      } catch (err: any) {
+        console.error(err);
+        toast.error(
+          err.response?.data?.message || "Payment verification failed",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [navigate],
+  );
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -225,13 +277,17 @@ const Booking = () => {
       const { data } = await API.post("/bookings", {
         worker: isBroadcast ? null : id,
         ...form,
-        service: form.subcategory || categoryParam || worker?.category || "General Service",
+        service:
+          form.subcategory ||
+          categoryParam ||
+          worker?.category ||
+          "General Service",
         amount: form.totalAmount + 49, // price + visiting charge
         userLocation: {
           type: "Point",
-          coordinates: [selectedLocation[1], selectedLocation[0]] // [lng, lat] format for geojson
+          coordinates: [selectedLocation[1], selectedLocation[0]], // [lng, lat] format for geojson
         },
-        category: categoryParam || worker?.category
+        category: categoryParam || worker?.category,
       });
 
       if (form.paymentMethod === "COD") {
@@ -256,16 +312,17 @@ const Booking = () => {
           color: "#f97316",
         },
         modal: {
-          ondismiss: () => setLoading(false)
-        }
+          ondismiss: () => setLoading(false),
+        },
       };
 
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
-
     } catch (err: any) {
       setLoading(false);
-      toast.error(err.response?.data?.message || "Booking failed. Please try again.");
+      toast.error(
+        err.response?.data?.message || "Booking failed. Please try again.",
+      );
     }
   };
 
@@ -282,8 +339,13 @@ const Booking = () => {
             className="space-y-8"
           >
             <div>
-              <h1 className="text-3xl font-bold text-white mb-4">Complete Your Booking</h1>
-              <p className="text-slate-400">Fill in the details to confirm your professional service appointment.</p>
+              <h1 className="text-3xl font-bold text-white mb-4">
+                Complete Your Booking
+              </h1>
+              <p className="text-slate-400">
+                Fill in the details to confirm your professional service
+                appointment.
+              </p>
             </div>
 
             {worker && (
@@ -297,57 +359,82 @@ const Booking = () => {
                     {isBroadcast ? (
                       <CheckCircle2 className="w-8 h-8 text-accent" />
                     ) : (
-                      <img src={worker.profileImage || "https://images.unsplash.com/photo-1540339832862-4745591f2138"} className="w-full h-full rounded-xl object-cover" />
+                      <img
+                        src={
+                          worker.profileImage ||
+                          "https://images.unsplash.com/photo-1540339832862-4745591f2138"
+                        }
+                        className="w-full h-full rounded-xl object-cover"
+                      />
                     )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-white">{isBroadcast ? "Broadcast Request" : worker.name}</h4>
-                    <p className="text-sm text-accent uppercase tracking-wider font-bold">{worker.category}</p>
+                    <h4 className="font-bold text-white">
+                      {isBroadcast ? "Broadcast Request" : worker.name}
+                    </h4>
+                    <p className="text-sm text-accent uppercase tracking-wider font-bold">
+                      {worker.category}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3 pt-4 border-t border-slate-800">
                   <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Service Charge ({form.subcategory || "Base"})</span>
-                    <span className="text-white font-bold">₹{form.totalAmount}</span>
+                    <span className="text-slate-400">
+                      Service Charge ({form.subcategory || "Base"})
+                    </span>
+                    <span className="text-white font-bold">
+                      ₹{form.totalAmount}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Visiting Charges</span>
-                    <span className="text-white font-bold text-green-500">₹49</span>
+                    <span className="text-white font-bold text-green-500">
+                      ₹49
+                    </span>
                   </div>
                   <div className="flex justify-between text-base pt-2 border-t border-slate-800/50">
                     <span className="text-white font-bold">Total Amount</span>
-                    <span className="text-accent font-extrabold text-xl">₹{form.totalAmount + 49}</span>
+                    <span className="text-accent font-extrabold text-xl">
+                      ₹{form.totalAmount + 49}
+                    </span>
                   </div>
                 </div>
               </div>
             )}
 
             <div className="bg-secondary/30 p-6 rounded-2xl border border-slate-800">
-                <div className="flex items-center gap-3 mb-4">
-                    <Navigation className="w-5 h-5 text-accent" />
-                    <h3 className="text-lg font-bold text-white">Location Sharing</h3>
-                </div>
-                <p className="text-sm text-slate-400 mb-6">
-                    Sharing your precise location helps our experts reach you faster and ensures accurate real-time tracking.
-                </p>
-                <div className="flex flex-col gap-3">
-                    <button 
-                        onClick={handleGetCurrentLocation}
-                        disabled={gettingLocation}
-                        className="flex items-center justify-center gap-2 bg-accent/10 hover:bg-accent/20 text-accent py-3 rounded-xl border border-accent/30 transition-all font-bold"
-                    >
-                        {gettingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
-                        {gettingLocation ? "Detecting..." : "Use Current Location"}
-                    </button>
-                    <button 
-                        onClick={() => setShowMap(!showMap)}
-                        className="flex items-center justify-center gap-2 bg-secondary hover:bg-slate-800 text-white py-3 rounded-xl border border-slate-700 transition-all font-bold"
-                    >
-                        <MapIcon className="w-4 h-4" />
-                        {showMap ? "Hide Map Picker" : "Pick on Map"}
-                    </button>
-                </div>
+              <div className="flex items-center gap-3 mb-4">
+                <Navigation className="w-5 h-5 text-accent" />
+                <h3 className="text-lg font-bold text-white">
+                  Location Sharing
+                </h3>
+              </div>
+              <p className="text-sm text-slate-400 mb-6">
+                Sharing your precise location helps our experts reach you faster
+                and ensures accurate real-time tracking.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handleGetCurrentLocation}
+                  disabled={gettingLocation}
+                  className="flex items-center justify-center gap-2 bg-accent/10 hover:bg-accent/20 text-accent py-3 rounded-xl border border-accent/30 transition-all font-bold"
+                >
+                  {gettingLocation ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Navigation className="w-4 h-4" />
+                  )}
+                  {gettingLocation ? "Detecting..." : "Use Current Location"}
+                </button>
+                <button
+                  onClick={() => setShowMap(!showMap)}
+                  className="flex items-center justify-center gap-2 bg-secondary hover:bg-slate-800 text-white py-3 rounded-xl border border-slate-700 transition-all font-bold"
+                >
+                  <MapIcon className="w-4 h-4" />
+                  {showMap ? "Hide Map Picker" : "Pick on Map"}
+                </button>
+              </div>
             </div>
           </motion.div>
 
@@ -360,25 +447,29 @@ const Booking = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               <AnimatePresence>
                 {showMap && (
-                    <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 300 }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="w-full rounded-2xl overflow-hidden border border-slate-800 mb-6"
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 300 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="w-full rounded-2xl overflow-hidden border border-slate-800 mb-6"
+                  >
+                    <MapContainer
+                      center={selectedLocation}
+                      zoom={13}
+                      style={{ height: "100%", width: "100%" }}
                     >
-                        <MapContainer 
-                            center={selectedLocation} 
-                            zoom={13} 
-                            style={{ height: "100%", width: "100%" }}
-                        >
-                            <TileLayer
-                                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                            />
-                            <LocationMarker position={selectedLocation} setPosition={setSelectedLocation} setAddress={(addr) => setForm((prev: any) => ({ ...prev, address: addr }))} />
-                            <MapRefresher />
-                            <CenterMap center={selectedLocation} />
-                        </MapContainer>
-                    </motion.div>
+                      <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                      <LocationMarker
+                        position={selectedLocation}
+                        setPosition={setSelectedLocation}
+                        setAddress={(addr) =>
+                          setForm((prev: any) => ({ ...prev, address: addr }))
+                        }
+                      />
+                      <MapRefresher />
+                      <CenterMap center={selectedLocation} />
+                    </MapContainer>
+                  </motion.div>
                 )}
               </AnimatePresence>
 
@@ -393,13 +484,22 @@ const Booking = () => {
                   value={form.subcategory}
                   onChange={(e) => {
                     const sub = e.target.value;
-                    const newPrice = subcategoryPrices[sub] || subcategoryPrices[categoryParam || ""] || 199;
-                    setForm({ ...form, subcategory: sub, totalAmount: newPrice });
+                    const newPrice =
+                      subcategoryPrices[sub] ||
+                      subcategoryPrices[categoryParam || ""] ||
+                      199;
+                    setForm({
+                      ...form,
+                      subcategory: sub,
+                      totalAmount: newPrice,
+                    });
                   }}
                 >
                   <option value="">-- Choose Type of Task --</option>
                   {subcategories.map((sub) => (
-                    <option key={sub} value={sub}>{sub}</option>
+                    <option key={sub} value={sub}>
+                      {sub}
+                    </option>
                   ))}
                   <option value="Other / General">Other / General</option>
                 </select>
@@ -416,7 +516,9 @@ const Booking = () => {
                   required
                   className="input-modern"
                   value={form.address}
-                  onChange={(e) => setForm({ ...form, address: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, address: e.target.value })
+                  }
                 />
               </div>
 
@@ -445,7 +547,9 @@ const Booking = () => {
                   required
                   className="input-modern"
                   value={form.bookingDate}
-                  onChange={(e) => setForm({ ...form, bookingDate: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, bookingDate: e.target.value })
+                  }
                 />
               </div>
 
@@ -457,7 +561,9 @@ const Booking = () => {
                 <select
                   className="input-modern appearance-none"
                   value={form.paymentMethod}
-                  onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
+                  onChange={(e) =>
+                    setForm({ ...form, paymentMethod: e.target.value })
+                  }
                 >
                   <option value="COD">Cash After Service</option>
                   <option value="ONLINE">Online Payment (Razorpay)</option>
@@ -472,7 +578,7 @@ const Booking = () => {
                 <span>{loading ? "Processing..." : "Confirm & Pay"}</span>
                 {!loading && <ChevronRight className="w-5 h-5" />}
               </button>
-              
+
               <p className="text-[10px] text-center text-slate-500 uppercase tracking-widest">
                 Secure 256-bit SSL encrypted booking
               </p>
