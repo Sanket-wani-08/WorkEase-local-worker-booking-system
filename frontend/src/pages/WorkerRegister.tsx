@@ -1,5 +1,10 @@
-import { useState, useEffect } from "react";
-import API from "../api/axios";
+import { useState, useEffect, useCallback } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { workerSchema } from "../utils/validationSchemas";
+import { categoryService } from "../services/category.service";
+import { workerService } from "../services/worker.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { User, Phone, Briefcase, FileText, Upload, CheckCircle2, Lock, CreditCard } from "lucide-react";
@@ -8,70 +13,70 @@ import { Loader2 } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
 
 const WorkerRegister = () => {
-  const [form, setForm] = useState<any>({
-    securityQuestion: "What is your pet's name?",
-    securityAnswer: "",
-    name: "",
-    phone: "",
-    category: "",
-    subcategory: "",
-    experience: "",
-    aadhaarNumber: "",
-    password: ""
-  });
   const [aadhaarImage, setAadhaarImage] = useState<File | null>(null);
   const [success, setSuccess] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [subcategories, setSubcategories] = useState<string[]>([]);
-  const [loadingCats, setLoadingCats] = useState(true);
 
-  // fetch categories from backend
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    resolver: yupResolver(workerSchema),
+    defaultValues: {
+      securityQuestion: "What is your pet's name?",
+      securityAnswer: "",
+      name: "",
+      phone: "",
+      category: "",
+      subcategory: "",
+      experience: 0,
+      aadhaarNumber: "",
+      password: ""
+    }
+  });
+
+  const selectedCategory = watch("category");
+
+  const { data: categories = [], isLoading: loadingCats, isError } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryService.getCategories
+  });
+
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const { data } = await API.get("/categories");
-        setCategories(data);
-        setLoadingCats(false);
-      } catch (error) {
-        console.error("Failed to load categories:", error);
-        toast.error("Failed to load categories");
-        setLoadingCats(false);
-      }
-    };
-    fetchCategories();
-  }, []);
+    if (isError) {
+      toast.error("Failed to load categories");
+    }
+  }, [isError]);
 
-  const handleCategoryChange = (e: any) => {
-    const value = e.target.value;
-    setSelectedCategory(value);
-    setForm({ ...form, category: value, subcategory: "" });
+  // Update subcategories when category changes
+  useEffect(() => {
+    if (selectedCategory) {
+      const selected = categories.find((c: any) => c.name === selectedCategory);
+      setSubcategories(selected ? selected.subcategories : []);
+      setValue("subcategory", "");
+    } else {
+      setSubcategories([]);
+      setValue("subcategory", "");
+    }
+  }, [selectedCategory, categories, setValue]);
 
-    const selected = categories.find((c: any) => c.name === value);
-    setSubcategories(selected ? selected.subcategories : []);
-  };
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-
-    const data = new FormData();
-    Object.keys(form).forEach(key => data.append(key, form[key]));
-
-    if (aadhaarImage) data.append("aadhaarImage", aadhaarImage);
-
-    try {
-      await API.post("/workers/register", data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+  const registerMutation = useMutation({
+    mutationFn: workerService.registerWorker,
+    onSuccess: () => {
       toast.success("Registration Successful!");
       setSuccess(true);
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       console.error(err);
       toast.error(err.response?.data?.message || "Registration failed. Please check all fields.");
     }
-  };
+  });
+
+  const onSubmit = useCallback((data: any) => {
+    const formData = new FormData();
+    Object.keys(data).forEach(key => formData.append(key, data[key]));
+
+    if (aadhaarImage) formData.append("aadhaarImage", aadhaarImage);
+
+    registerMutation.mutate(formData);
+  }, [aadhaarImage, registerMutation]);
 
   if (success) {
     return (
@@ -112,7 +117,7 @@ const WorkerRegister = () => {
             <p className="text-slate-400">Provide your details to start receiving service requests in your area.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="card-premium space-y-8">
+          <form onSubmit={handleSubmit(onSubmit)} className="card-premium space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-300 flex items-center">
@@ -123,9 +128,9 @@ const WorkerRegister = () => {
                   placeholder="e.g. John Doe" 
                   required
                   className="input-modern"
-                  value={form.name}
-                  onChange={e => setForm({...form, name: e.target.value})} 
+                  {...register("name")}
                 />
+                {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -137,9 +142,9 @@ const WorkerRegister = () => {
                   placeholder="10-digit number" 
                   required
                   className="input-modern"
-                  value={form.phone}
-                  onChange={e => setForm({...form, phone: e.target.value})} 
+                  {...register("phone")}
                 />
+                {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -151,9 +156,8 @@ const WorkerRegister = () => {
                   <select 
                     required
                     className="input-modern appearance-none w-full"
-                    value={selectedCategory}
-                    onChange={handleCategoryChange}
                     disabled={loadingCats}
+                    {...register("category")}
                   >
                     <option value="">Select Category</option>
                     {categories.map((cat: any) => (
@@ -166,6 +170,7 @@ const WorkerRegister = () => {
                     </div>
                   )}
                 </div>
+                {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -177,14 +182,14 @@ const WorkerRegister = () => {
                   required 
                   className="input-modern appearance-none" 
                   disabled={!selectedCategory || subcategories.length === 0}
-                  value={form.subcategory || ""}
-                  onChange={e => setForm({ ...form, subcategory: e.target.value })}
+                  {...register("subcategory")}
                 >
                   <option value="">Select Sub‑Category</option>
                   {subcategories.map((sub: string) => (
                     <option key={sub} value={sub}>{sub}</option>
                   ))}
                 </select>
+                {errors.subcategory && <p className="text-xs text-red-500">{errors.subcategory.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -197,9 +202,9 @@ const WorkerRegister = () => {
                   placeholder="e.g. 5" 
                   min="0"
                   className="input-modern"
-                  value={form.experience}
-                  onChange={e => setForm({...form, experience: e.target.value})} 
+                  {...register("experience")}
                 />
+                {errors.experience && <p className="text-xs text-red-500">{errors.experience.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -213,12 +218,10 @@ const WorkerRegister = () => {
                   maxLength={12}
                   minLength={12}
                   className="input-modern"
-                  value={form.aadhaarNumber}
-                  onChange={e => setForm({...form, aadhaarNumber: e.target.value})} 
+                  {...register("aadhaarNumber")}
                 />
+                {errors.aadhaarNumber && <p className="text-xs text-red-500">{errors.aadhaarNumber.message}</p>}
               </div>
-
-
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-300 flex items-center">
@@ -231,10 +234,11 @@ const WorkerRegister = () => {
                   required
                   minLength={6}
                   className="input-modern"
-                  value={form.password}
-                  onChange={e => setForm({...form, password: e.target.value})} 
+                  {...register("password")}
                 />
+                {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
               </div>
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-300 flex items-center">
                   <Lock className="w-4 h-4 mr-2 text-accent" />
@@ -243,14 +247,14 @@ const WorkerRegister = () => {
                 <select 
                   className="input-modern"
                   required
-                  value={form.securityQuestion}
-                  onChange={e => setForm({...form, securityQuestion: e.target.value})}
+                  {...register("securityQuestion")}
                 >
                   <option>What is your pet's name?</option>
                   <option>What is your mother's maiden name?</option>
                   <option>What was the name of your first school?</option>
                   <option>What city were you born in?</option>
                 </select>
+                {errors.securityQuestion && <p className="text-xs text-red-500">{errors.securityQuestion.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -262,9 +266,9 @@ const WorkerRegister = () => {
                   placeholder="e.g. Fluffy" 
                   required
                   className="input-modern"
-                  value={form.securityAnswer}
-                  onChange={e => setForm({...form, securityAnswer: e.target.value})} 
+                  {...register("securityAnswer")}
                 />
+                {errors.securityAnswer && <p className="text-xs text-red-500">{errors.securityAnswer.message}</p>}
               </div>
             </div>
 
@@ -277,7 +281,7 @@ const WorkerRegister = () => {
                 <div className="relative group border-2 border-dashed border-slate-700 rounded-xl p-4 hover:border-accent transition-colors text-center cursor-pointer overflow-hidden">
                   <input 
                     type="file" 
-                    required
+                    required={!aadhaarImage}
                     accept="image/*"
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     onChange={e => setAadhaarImage(e.target.files?.[0] || null)} 

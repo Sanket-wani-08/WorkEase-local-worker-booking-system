@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import API from "../api/axios";
+import { useQuery } from "@tanstack/react-query";
+import { userService } from "../services/user.service";
+import { categoryService } from "../services/category.service";
+import { workerService } from "../services/worker.service";
 import WorkerCard from "../components/WorkerCard";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -11,65 +14,45 @@ import { useNavigate } from "react-router-dom";
 const Workers = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [workers, setWorkers] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState(searchParams.get("category") || "");
   const [subcategory, setSubcategory] = useState(searchParams.get("subcategory") || "");
-  const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<any>(null);
 
-  useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const res = await API.get("/user/me");
-        if (res.data.role === "admin") {
-          setIsAdmin(true);
-        } else {
-          navigate("/services");
-        }
-      } catch (err) {
-        navigate("/services");
-      }
-    };
-    checkAdmin();
-  }, [navigate]);
+  const { data: userProfile, isError: userError } = useQuery({
+    queryKey: ["profile", "user"],
+    queryFn: userService.getUserProfile,
+    retry: false
+  });
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const { data } = await API.get("/categories");
-        setCategories(data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
+    if (userProfile) {
+      if (userProfile.role === "admin") {
+        setIsAdmin(true);
+      } else {
+        navigate("/services");
       }
-    };
-    fetchCategories();
-  }, []);
+    }
+    if (userError) {
+      navigate("/services");
+    }
+  }, [userProfile, userError, navigate]);
+
+  const { data: categories } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryService.getCategories
+  });
 
   useEffect(() => {
     setCategory(searchParams.get("category") || "");
     setSubcategory(searchParams.get("subcategory") || "");
   }, [searchParams]);
 
-  useEffect(() => {
-    fetchWorkers();
-  }, [category, subcategory]);
-
-  const fetchWorkers = async () => {
-    setLoading(true);
-    try {
-      const res = await API.get("/workers/search", {
-        params: { category, subcategory }
-      });
-      setWorkers(res.data);
-    } catch (error) {
-      // silently ignore error
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: workers, isLoading: loading } = useQuery({
+    queryKey: ["workers", category, subcategory],
+    queryFn: () => workerService.searchWorkers({ category, subcategory })
+  });
 
   const filteredWorkers = (workers || []).filter((w: any) =>
     w?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -108,7 +91,7 @@ const Workers = () => {
                 className="input-modern pl-11 w-full sm:w-60 appearance-none"
               >
                 <option value="">All Categories</option>
-                {categories?.map(cat => (
+                {categories?.map((cat: any) => (
                   <option key={cat?._id || cat?.name} value={cat?.name}>{cat?.name}</option>
                 ))}
               </select>
@@ -128,7 +111,7 @@ const Workers = () => {
           >
             All Workers
           </button>
-          {categories?.map(cat => (
+          {categories?.map((cat: any) => (
             <button
               key={cat?._id || cat?.name}
               onClick={() => setCategory(cat?.name || "")}

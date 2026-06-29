@@ -2,7 +2,12 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, Hammer, User as Bell, ChevronDown, LogOut, LayoutDashboard, UserCircle, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import API from "../api/axios";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { notificationService } from "../services/notification.service";
+import { userService } from "../services/user.service";
+import { workerService } from "../services/worker.service";
+import { useAppSelector, useAppDispatch } from "../hooks/storeHooks";
+import { logout } from "../features/auth/authSlice";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,8 +15,8 @@ const Navbar = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const { isAuthenticated, role } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
   const [userName, setUserName] = useState("User");
   const [userRole, setUserRole] = useState("User");
   const navigate = useNavigate();
@@ -25,77 +30,69 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    const userToken = localStorage.getItem("userToken");
-    const workerToken = localStorage.getItem("workerToken");
-    if (userToken || workerToken) {
-      setIsLoggedIn(true);
-      fetchUnreadCount();
-      fetchUserInfo();
-    }
-  }, []);
+  const queryClient = useQueryClient();
+  const isWorker = role === 'worker';
 
-  const fetchUserInfo = async () => {
-    try {
-      const isWorker = !!localStorage.getItem("workerToken");
-      const endpoint = isWorker ? "/workers/me" : "/user/me";
-      const res = await API.get(endpoint);
-      setUserName(res.data.name);
-      setUserRole(isWorker ? "Worker" : res.data.role);
-    } catch (err) {
-      console.error("Failed to fetch user info:", err);
-    }
-  };
-
-  const fetchUnreadCount = async () => {
-    try {
-      const res = await API.get("/notifications/unread-count");
-      setUnreadCount(res.data.unreadCount);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchNotifications = async () => {
-    try {
-      const res = await API.get("/notifications");
-      setNotifications(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const markAsRead = async (id: string) => {
-    try {
-      await API.put(`/notifications/${id}/read`);
-      setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
-      fetchUnreadCount();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      await API.put("/notifications/read-all");
-      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  const { data: userInfo } = useQuery({
+    queryKey: ["profile", role],
+    queryFn: isWorker ? workerService.getWorkerProfile : userService.getUserProfile,
+    enabled: !!isAuthenticated,
+  });
 
   useEffect(() => {
-    if (showNotifications) {
-      fetchNotifications();
+    if (userInfo) {
+      setUserName(userInfo.name);
+      setUserRole(isWorker ? "Worker" : userInfo.role);
     }
-  }, [showNotifications]);
+  }, [userInfo, isWorker]);
+
+  const { data: unreadCountData } = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: notificationService.getUnreadCount,
+    enabled: !!isAuthenticated,
+    refetchInterval: 30000, // Poll every 30s
+  });
+
+  const unreadCount = unreadCountData?.unreadCount || 0;
+
+  const { data: notificationsData } = useQuery({
+    queryKey: ["notifications"],
+    queryFn: notificationService.getNotifications,
+    enabled: !!isAuthenticated && showNotifications,
+  });
+
+  useEffect(() => {
+    if (notificationsData) {
+      setNotifications(notificationsData);
+    }
+  }, [notificationsData]);
+
+  const markAsReadMutation = useMutation({
+    mutationFn: notificationService.markAsRead,
+    onSuccess: (_, id) => {
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    }
+  });
+
+  const markAllAsReadMutation = useMutation({
+    mutationFn: notificationService.markAllAsRead,
+    onSuccess: () => {
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
+    }
+  });
+
+  const markAsRead = (id: string) => {
+    markAsReadMutation.mutate(id);
+  };
+
+  const markAllAsRead = () => {
+    markAllAsReadMutation.mutate();
+  };
 
   const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("workerToken");
-    localStorage.removeItem("workerId");
-    setIsLoggedIn(false);
+    dispatch(logout());
     navigate("/login");
   };
 
@@ -145,7 +142,7 @@ const Navbar = () => {
 
             <div className="h-6 w-px bg-slate-800" />
 
-            {isLoggedIn ? (
+            {isAuthenticated ? (
               <div className="flex items-center space-x-6">
                 {/* Notification Bell */}
                 <div className="relative">
@@ -339,7 +336,7 @@ const Navbar = () => {
 
               <div className="my-6 h-px bg-white/5 mx-4" />
 
-              {isLoggedIn ? (
+              {isAuthenticated ? (
                 <div className="space-y-2">
                   <Link
                     to="/dashboard"

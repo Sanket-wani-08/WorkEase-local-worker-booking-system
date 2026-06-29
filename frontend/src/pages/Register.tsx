@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api/axios";
+import { useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { registerSchema } from "../utils/validationSchemas";
+import { authService } from "../services/auth.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { User, Mail, Phone, Lock, CheckCircle2 } from "lucide-react";
@@ -8,37 +12,39 @@ import { motion } from "framer-motion";
 
 const Register = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-    securityQuestion: "What is your pet's name?",
-    securityAnswer: ""
-  });
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-
-    if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match");
-      return;
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: yupResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+      securityQuestion: "What is your pet's name?",
+      securityAnswer: ""
     }
+  });
 
-    try {
-      await API.post("/auth/register", form);
+  const registerMutation = useMutation({
+    mutationFn: authService.registerUser,
+    onSuccess: () => {
       setSuccess(true);
       setTimeout(() => {
         navigate("/login");
       }, 2000);
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       console.error(err);
       setError(err.response?.data?.message || "Registration failed. Please check all fields.");
     }
+  });
+
+  const onSubmit = (data: any) => {
+    setError("");
+    registerMutation.mutate(data);
   };
 
   if (success) {
@@ -74,7 +80,7 @@ const Register = () => {
             <p className="text-slate-400">Join WorkEase to book local services easily</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="card-premium space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="card-premium space-y-5">
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-sm text-center">
                 {error}
@@ -90,8 +96,9 @@ const Register = () => {
                 placeholder="e.g. John Doe" 
                 required
                 className="input-modern"
-                onChange={e => setForm({...form, name: e.target.value})} 
+                {...register("name")}
               />
+              {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -104,8 +111,9 @@ const Register = () => {
                 placeholder="john@example.com" 
                 required
                 className="input-modern"
-                onChange={e => setForm({...form, email: e.target.value})} 
+                {...register("email")}
               />
+              {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -117,8 +125,9 @@ const Register = () => {
                 placeholder="10-digit number" 
                 required
                 className="input-modern"
-                onChange={e => setForm({...form, phone: e.target.value})} 
+                {...register("phone")}
               />
+              {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -132,8 +141,9 @@ const Register = () => {
                 required
                 minLength={6}
                 className="input-modern"
-                onChange={e => setForm({...form, password: e.target.value})} 
+                {...register("password")}
               />
+              {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -147,8 +157,9 @@ const Register = () => {
                 required
                 minLength={6}
                 className="input-modern"
-                onChange={e => setForm({...form, confirmPassword: e.target.value})} 
+                {...register("confirmPassword")}
               />
+              {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -159,14 +170,14 @@ const Register = () => {
               <select 
                 className="input-modern"
                 required
-                value={form.securityQuestion}
-                onChange={e => setForm({...form, securityQuestion: e.target.value})}
+                {...register("securityQuestion")}
               >
                 <option>What is your pet's name?</option>
                 <option>What is your mother's maiden name?</option>
                 <option>What was the name of your first school?</option>
                 <option>What city were you born in?</option>
               </select>
+              {errors.securityQuestion && <p className="text-xs text-red-500">{errors.securityQuestion.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -178,8 +189,9 @@ const Register = () => {
                 placeholder="e.g. Fluffy" 
                 required
                 className="input-modern"
-                onChange={e => setForm({...form, securityAnswer: e.target.value})} 
+                {...register("securityAnswer")}
               />
+              {errors.securityAnswer && <p className="text-xs text-red-500">{errors.securityAnswer.message}</p>}
             </div>
 
             <button type="submit" className="btn-primary w-full py-3 text-lg mt-4">

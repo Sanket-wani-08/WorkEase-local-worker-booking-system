@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import API from "../api/axios";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "../services/auth.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Mail, Phone, ArrowLeft, CheckCircle2, AlertCircle, Lock, HelpCircle } from "lucide-react";
@@ -21,52 +22,63 @@ const ForgotPassword = () => {
     const [answer, setAnswer] = useState("");
     const [newPassword, setNewPassword] = useState("");
     
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
 
-    // fetch security question
-    const handleIdentify = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError("");
-
-        try {
-            const endpoint = activeTab === "user" ? "/auth/forgot-password" : "/workers/forgot-password";
+    // useMutation for identifying account (fetching security question)
+    const identifyMutation = useMutation({
+        mutationFn: async () => {
             const payload = activeTab === "user" ? { email } : { phone };
-            
-            const res = await API.post(endpoint, payload);
-            setQuestion(res.data.question);
+            if (activeTab === "user") {
+                return authService.forgotPasswordUser(payload);
+            } else {
+                return authService.forgotPasswordWorker(payload);
+            }
+        },
+        onSuccess: (data) => {
+            setQuestion(data.question);
             setStep(2);
-        } catch (err: any) {
+        },
+        onError: (err: any) => {
             setError(err.response?.data?.message || "Account not found.");
-        } finally {
-            setLoading(false);
         }
-    };
+    });
 
-    // verify answer and reset password
-    const handleReset = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError("");
-
-        try {
-            const endpoint = activeTab === "user" ? "/auth/reset-password-answer" : "/workers/reset-password-answer";
+    // useMutation for verifying answer & resetting password
+    const resetMutation = useMutation({
+        mutationFn: async () => {
             const payload = activeTab === "user" 
                 ? { email, answer, newPassword } 
                 : { phone, answer, newPassword };
-            
-            await API.post(endpoint, payload);
+            if (activeTab === "user") {
+                return authService.resetPasswordAnswerUser(payload);
+            } else {
+                return authService.resetPasswordAnswerWorker(payload);
+            }
+        },
+        onSuccess: () => {
             setSuccess(true);
             toast.success("Password reset successful!");
             setTimeout(() => navigate("/login"), 3000);
-        } catch (err: any) {
+        },
+        onError: (err: any) => {
             setError(err.response?.data?.message || "Incorrect answer or reset failed.");
-        } finally {
-            setLoading(false);
         }
+    });
+
+    const handleIdentify = (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        identifyMutation.mutate();
     };
+
+    const handleReset = (e: React.FormEvent) => {
+        e.preventDefault();
+        setError("");
+        resetMutation.mutate();
+    };
+
+    const loading = identifyMutation.isPending || resetMutation.isPending;
 
     return (
         <div className="min-h-screen bg-primary">

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import socket from "../socket/socket";
-import API from "../api/axios";
+import { useQuery } from "@tanstack/react-query";
+import { chatService } from "../services/chat.service";
 
 interface Message {
     _id: string;
@@ -24,12 +25,23 @@ interface ChatModalProps {
 const ChatModal: React.FC<ChatModalProps> = ({ bookingId, isOpen, onClose, currentUserId, role }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState("");
-    const [loading, setLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    const { data: initialMessages = [], isLoading: loading } = useQuery({
+        queryKey: ["messages", bookingId],
+        queryFn: () => chatService.getMessages(bookingId),
+        enabled: isOpen && !!bookingId,
+    });
+
+    useEffect(() => {
+        if (initialMessages.length > 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setMessages(initialMessages);
+        }
+    }, [initialMessages]);
 
     useEffect(() => {
         if (isOpen && bookingId) {
-            fetchMessages();
             socket.emit("join-booking", bookingId);
 
             const handleReceiveMessage = (msg: Message) => {
@@ -49,18 +61,6 @@ const ChatModal: React.FC<ChatModalProps> = ({ bookingId, isOpen, onClose, curre
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
     }, [messages]);
-
-    const fetchMessages = async () => {
-        try {
-            setLoading(true);
-            const res = await API.get(`/messages/${bookingId}`);
-            setMessages(res.data);
-        } catch (error) {
-            console.error("Error fetching messages:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
