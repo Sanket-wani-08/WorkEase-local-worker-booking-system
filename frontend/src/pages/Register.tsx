@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { authService } from "../services/auth.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -9,17 +10,20 @@ import { motion } from "framer-motion";
 
 const Register = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-    securityQuestion: "What is your pet's name?",
-    securityAnswer: ""
-  });
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  const { register, handleSubmit, watch, formState: { errors } } = useForm({
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+      securityQuestion: "What is your pet's name?",
+      securityAnswer: ""
+    }
+  });
 
   const registerMutation = useMutation({
     mutationFn: authService.registerUser,
@@ -35,16 +39,15 @@ const Register = () => {
     }
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = (data: any) => {
     setError("");
 
-    if (form.password !== form.confirmPassword) {
+    if (data.password !== data.confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
-    registerMutation.mutate(form);
+    registerMutation.mutate(data);
   };
 
   if (success) {
@@ -80,7 +83,7 @@ const Register = () => {
             <p className="text-slate-400">Join WorkEase to book local services easily</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="card-premium space-y-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="card-premium space-y-5">
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-sm text-center">
                 {error}
@@ -96,8 +99,9 @@ const Register = () => {
                 placeholder="e.g. John Doe" 
                 required
                 className="input-modern"
-                onChange={e => setForm({...form, name: e.target.value})} 
+                {...register("name", { required: "Name is required" })}
               />
+              {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -110,8 +114,15 @@ const Register = () => {
                 placeholder="john@example.com" 
                 required
                 className="input-modern"
-                onChange={e => setForm({...form, email: e.target.value})} 
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address"
+                  }
+                })}
               />
+              {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -123,8 +134,15 @@ const Register = () => {
                 placeholder="10-digit number" 
                 required
                 className="input-modern"
-                onChange={e => setForm({...form, phone: e.target.value})} 
+                {...register("phone", {
+                  required: "Phone number is required",
+                  pattern: {
+                    value: /^[0-9]{10}$/,
+                    message: "Please enter a valid 10-digit phone number"
+                  }
+                })}
               />
+              {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -138,8 +156,15 @@ const Register = () => {
                 required
                 minLength={6}
                 className="input-modern"
-                onChange={e => setForm({...form, password: e.target.value})} 
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 6,
+                    message: "Password must be at least 6 characters"
+                  }
+                })}
               />
+              {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -153,8 +178,16 @@ const Register = () => {
                 required
                 minLength={6}
                 className="input-modern"
-                onChange={e => setForm({...form, confirmPassword: e.target.value})} 
+                {...register("confirmPassword", {
+                  required: "Confirm password is required",
+                  validate: (val) => {
+                    if (watch('password') !== val) {
+                      return "Your passwords do not match";
+                    }
+                  }
+                })}
               />
+              {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -165,14 +198,14 @@ const Register = () => {
               <select 
                 className="input-modern"
                 required
-                value={form.securityQuestion}
-                onChange={e => setForm({...form, securityQuestion: e.target.value})}
+                {...register("securityQuestion", { required: "Security question is required" })}
               >
                 <option>What is your pet's name?</option>
                 <option>What is your mother's maiden name?</option>
                 <option>What was the name of your first school?</option>
                 <option>What city were you born in?</option>
               </select>
+              {errors.securityQuestion && <p className="text-xs text-red-500">{errors.securityQuestion.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -184,8 +217,9 @@ const Register = () => {
                 placeholder="e.g. Fluffy" 
                 required
                 className="input-modern"
-                onChange={e => setForm({...form, securityAnswer: e.target.value})} 
+                {...register("securityAnswer", { required: "Security answer is required" })}
               />
+              {errors.securityAnswer && <p className="text-xs text-red-500">{errors.securityAnswer.message}</p>}
             </div>
 
             <button type="submit" className="btn-primary w-full py-3 text-lg mt-4">

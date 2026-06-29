@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { authService } from "../services/auth.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -12,11 +13,24 @@ import { loginSuccess } from "../features/auth/authSlice";
 const Login = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"user" | "worker">("user");
-  const [form, setForm] = useState({ phone: "", email: "", password: "" });
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [rejectionModal, setRejectionModal] = useState<{ show: boolean, reason: string }>({ show: false, reason: "" });
   const dispatch = useAppDispatch();
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    defaultValues: {
+      phone: "",
+      email: "",
+      password: ""
+    }
+  });
+
+  // Reset form when tab changes
+  useEffect(() => {
+    reset({ phone: "", email: "", password: "" });
+    setError("");
+  }, [activeTab, reset]);
 
   const workerLoginMutation = useMutation({
     mutationFn: authService.loginWorker,
@@ -52,13 +66,12 @@ const Login = () => {
     }
   }
 
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
+  const onSubmit = (data: any) => {
     setError("");
     if (activeTab === "worker") {
-      workerLoginMutation.mutate({ phone: form.phone, password: form.password });
+      workerLoginMutation.mutate({ phone: data.phone, password: data.password });
     } else {
-      userLoginMutation.mutate({ email: form.email, password: form.password });
+      userLoginMutation.mutate({ email: data.email, password: data.password });
     }
   };
 
@@ -102,7 +115,7 @@ const Login = () => {
                 className={`flex-1 py-2.5 text-sm font-medium rounded-lg flex items-center justify-center transition-all ${
                   activeTab === "user" ? "bg-accent text-white shadow-lg shadow-orange-500/20" : "text-slate-400 hover:text-white"
                 }`}
-                onClick={() => { setActiveTab("user"); setError(""); }}
+                onClick={() => { setActiveTab("user"); }}
               >
                 <User className="w-4 h-4 mr-2" />
                 User Login
@@ -112,14 +125,14 @@ const Login = () => {
                 className={`flex-1 py-2.5 text-sm font-medium rounded-lg flex items-center justify-center transition-all ${
                   activeTab === "worker" ? "bg-accent text-white shadow-lg shadow-orange-500/20" : "text-slate-400 hover:text-white"
                 }`}
-                onClick={() => { setActiveTab("worker"); setError(""); }}
+                onClick={() => { setActiveTab("worker"); }}
               >
                 <Briefcase className="w-4 h-4 mr-2" />
                 Worker Login
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               {error && (
                 <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-3 rounded-lg text-sm text-center">
                   {error}
@@ -145,9 +158,15 @@ const Login = () => {
                         placeholder="10-digit number" 
                         required
                         className="input-modern"
-                        value={form.phone}
-                        onChange={e => setForm({...form, phone: e.target.value})} 
+                        {...register("phone", {
+                          required: "Phone number is required",
+                          pattern: {
+                            value: /^[0-9]{10}$/,
+                            message: "Please enter a valid 10-digit phone number"
+                          }
+                        })}
                       />
+                      {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -160,13 +179,19 @@ const Login = () => {
                         placeholder="john@example.com" 
                         required
                         className="input-modern"
-                        value={form.email}
-                        onChange={e => setForm({...form, email: e.target.value})} 
+                        {...register("email", {
+                          required: "Email address is required",
+                          pattern: {
+                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                            message: "Invalid email address"
+                          }
+                        })}
                       />
+                      {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
                     </div>
                   )}
 
-                    <div className="space-y-2">
+                  <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-300 flex items-center">
                       <Lock className="w-4 h-4 mr-2 text-accent" />
                       Password
@@ -176,9 +201,15 @@ const Login = () => {
                       placeholder="Enter password" 
                       required
                       className="input-modern"
-                      value={form.password}
-                      onChange={e => setForm({...form, password: e.target.value})} 
+                      {...register("password", {
+                        required: "Password is required",
+                        minLength: {
+                          value: 6,
+                          message: "Password must be at least 6 characters"
+                        }
+                      })}
                     />
+                    {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
                     <div className="flex justify-end">
                       <Link to="/forgot-password" title="Forgot Password" className="text-xs text-slate-400 hover:text-accent transition-colors">
                         Forgot Password?

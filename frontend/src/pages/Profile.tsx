@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { userService } from "../services/user.service";
 import { workerService } from "../services/worker.service";
 import toast from "react-hot-toast";
@@ -18,13 +19,17 @@ const Profile = () => {
     const [saving, setSaving] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
-    const [form, setForm] = useState<any>({
-        name: "",
-        phone: "",
-        category: "",
-        subcategory: "",
-        experience: ""
+
+    const { register, handleSubmit, reset, formState: { errors } } = useForm({
+        defaultValues: {
+            name: "",
+            phone: "",
+            category: "",
+            subcategory: "",
+            experience: ""
+        }
     });
+
     const { isAuthenticated, role: reduxRole } = useAppSelector((state) => state.auth);
 
     const isWorker = reduxRole === 'worker';
@@ -45,7 +50,7 @@ const Profile = () => {
             setProfile(profileRes);
             if (isWorker) {
                 setRole("worker");
-                setForm({
+                reset({
                     name: profileRes.name || "",
                     phone: profileRes.phone || "",
                     category: profileRes.category || "",
@@ -54,14 +59,16 @@ const Profile = () => {
                 });
             } else {
                 setRole(profileRes.role === "admin" ? "admin" : "user");
-                setForm((prev: any) => ({
-                    ...prev,
+                reset({
                     name: profileRes.name || "",
-                    phone: profileRes.phone || ""
-                }));
+                    phone: profileRes.phone || "",
+                    category: "",
+                    subcategory: "",
+                    experience: ""
+                });
             }
         }
-    }, [profileRes, isAuthenticated, navigate, isWorker]);
+    }, [profileRes, isAuthenticated, navigate, isWorker, reset]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -86,18 +93,17 @@ const Profile = () => {
         }
     });
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
+    const onSubmit = (data: any) => {
         setSaving(true);
         
         const formData = new FormData();
-        formData.append("name", form.name);
-        formData.append("phone", form.phone);
+        formData.append("name", data.name);
+        formData.append("phone", data.phone);
         
         if (role === "worker") {
-            formData.append("experience", form.experience);
-            formData.append("category", form.category);
-            formData.append("subcategory", form.subcategory);
+            formData.append("experience", data.experience);
+            formData.append("category", data.category);
+            formData.append("subcategory", data.subcategory);
         }
 
         if (imageFile) {
@@ -128,7 +134,7 @@ const Profile = () => {
                     {/* Background Accent */}
                     <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-accent/20 to-blue-500/20" />
 
-                    <form onSubmit={handleSubmit} className="relative z-10 p-8">
+                    <form onSubmit={handleSubmit(onSubmit)} className="relative z-10 p-8">
                         <div className="flex flex-col md:flex-row items-center md:items-end gap-6 mb-12">
                             <div className="relative group">
                                 <img 
@@ -173,10 +179,10 @@ const Profile = () => {
                                     <label className="text-sm font-bold text-slate-400 mb-2 block uppercase tracking-wider">Full Name</label>
                                     <input 
                                         type="text" 
-                                        value={form.name}
-                                        onChange={(e) => setForm({ ...form, name: e.target.value })}
                                         className="input-premium w-full"
+                                        {...register("name", { required: "Name is required" })}
                                     />
+                                    {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
                                 </div>
 
                                 <div>
@@ -185,11 +191,17 @@ const Profile = () => {
                                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                                         <input 
                                             type="text" 
-                                            value={form.phone}
-                                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
                                             className="input-premium w-full pl-12"
+                                            {...register("phone", {
+                                                required: "Phone is required",
+                                                pattern: {
+                                                    value: /^[0-9]{10}$/,
+                                                    message: "Please enter a valid 10-digit phone number"
+                                                }
+                                            })}
                                         />
                                     </div>
+                                    {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
                                 </div>
 
                                 {role === "user" && (
@@ -200,7 +212,7 @@ const Profile = () => {
                                             <input 
                                                 type="text" 
                                                 disabled
-                                                value={profile?.email}
+                                                value={profile?.email || ""}
                                                 className="input-premium w-full pl-12 opacity-50 cursor-not-allowed"
                                             />
                                         </div>
@@ -220,20 +232,20 @@ const Profile = () => {
                                         <label className="text-sm font-bold text-slate-400 mb-2 block uppercase tracking-wider">Primary Category</label>
                                         <input 
                                             type="text" 
-                                            value={form.category}
-                                            onChange={(e) => setForm({ ...form, category: e.target.value })}
                                             className="input-premium w-full"
+                                            {...register("category", { required: "Category is required" })}
                                         />
+                                        {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
                                     </div>
 
                                     <div>
                                         <label className="text-sm font-bold text-slate-400 mb-2 block uppercase tracking-wider">Specialization</label>
                                         <input 
                                             type="text" 
-                                            value={form.subcategory}
-                                            onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
                                             className="input-premium w-full"
+                                            {...register("subcategory", { required: "Specialization is required" })}
                                         />
+                                        {errors.subcategory && <p className="text-xs text-red-500">{errors.subcategory.message}</p>}
                                     </div>
                                 </div>
                             )}

@@ -14,6 +14,7 @@ import ChatModal from "../components/ChatModal";
 import { useAppSelector } from "../hooks/storeHooks";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { dashboardService } from "../services/dashboard.service";
 import { workerService } from "../services/worker.service";
 import { bookingService } from "../services/booking.service";
@@ -26,15 +27,31 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [newCategory, setNewCategory] = useState({ name: "", subcategories: "" });
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editCategoryForm, setEditCategoryForm] = useState({ name: "", subcategories: "" });
   const [selectedBookingForReview, setSelectedBookingForReview] = useState<any>(null);
-  const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
   const [selectedIdImage, setSelectedIdImage] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChatBookingId, setActiveChatBookingId] = useState<string | null>(null);
+
+  // Category useForm hook
+  const { register: registerCategory, handleSubmit: handleCategorySubmit, reset: resetCategoryForm } = useForm({
+    defaultValues: {
+      name: "",
+      subcategories: ""
+    }
+  });
+
+  // Review useForm hook
+  const { register: registerReview, handleSubmit: handleReviewSubmitForm, reset: resetReviewForm, setValue: setReviewValue, watch: watchReview } = useForm({
+    defaultValues: {
+      rating: 5,
+      comment: ""
+    }
+  });
+
+  const watchRating = watchReview("rating");
 
   const { isAuthenticated, role: reduxRole } = useAppSelector((state) => state.auth);
 
@@ -143,7 +160,7 @@ const Dashboard = () => {
     mutationFn: categoryService.createCategory,
     onSuccess: () => {
       toast.success("Category added successfully");
-      setNewCategory({ name: "", subcategories: "" });
+      resetCategoryForm();
       setIsAddingCategory(false);
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     },
@@ -153,11 +170,10 @@ const Dashboard = () => {
     }
   });
 
-  const handleAddCategory = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onAddCategorySubmit = (data: any) => {
     setIsAddingCategory(true);
-    const subArr = newCategory.subcategories.split(",").map(s => s.trim()).filter(s => s);
-    addCategoryMutation.mutate({ name: newCategory.name, subcategories: subArr });
+    const subArr = data.subcategories.split(",").map((s: string) => s.trim()).filter((s: string) => s);
+    addCategoryMutation.mutate({ name: data.name, subcategories: subArr });
   };
 
   const updateCategoryMutation = useMutation({
@@ -242,19 +258,18 @@ const Dashboard = () => {
     onSuccess: () => {
       toast.success("Review submitted!");
       setSelectedBookingForReview(null);
-      setReviewForm({ rating: 5, comment: "" });
+      resetReviewForm();
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: () => toast.error("Failed to submit review")
   });
 
-  const handleReviewSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const onReviewSubmit = (data: any) => {
     reviewMutation.mutate({
       bookingId: selectedBookingForReview._id,
       worker: selectedBookingForReview.worker?._id,
-      rating: reviewForm.rating,
-      comment: reviewForm.comment
+      rating: data.rating,
+      comment: data.comment
     });
   };
 
@@ -460,16 +475,15 @@ const Dashboard = () => {
               <div className="lg:col-span-1">
                 <div className="card-premium h-full">
                   <h3 className="text-lg font-bold text-white mb-4">Add New Category</h3>
-                  <form onSubmit={handleAddCategory} className="space-y-4">
+                  <form onSubmit={handleCategorySubmit(onAddCategorySubmit)} className="space-y-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Category Name</label>
                       <input
                         type="text"
                         required
                         placeholder="e.g. Home Cleaning"
-                        value={newCategory.name}
-                        onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
                         className="input-premium w-full text-sm py-2 px-3"
+                        {...registerCategory("name", { required: "Category name is required" })}
                       />
                     </div>
                     <div>
@@ -478,9 +492,8 @@ const Dashboard = () => {
                         required
                         rows={3}
                         placeholder="e.g. Deep Cleaning, Sofa Cleaning, Bathroom Cleaning"
-                        value={newCategory.subcategories}
-                        onChange={(e) => setNewCategory({ ...newCategory, subcategories: e.target.value })}
                         className="input-premium w-full text-sm py-2 px-3 resize-none"
+                        {...registerCategory("subcategories", { required: "Subcategories are required" })}
                       />
                     </div>
                     <button
@@ -932,15 +945,15 @@ const Dashboard = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleReviewSubmit} className="space-y-6">
+              <form onSubmit={handleReviewSubmitForm(onReviewSubmit)} className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wider">Rating</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star
                         key={star}
-                        onClick={() => setReviewForm({ ...reviewForm, rating: star })}
-                        className={`w-8 h-8 cursor-pointer transition-all ${star <= reviewForm.rating ? "text-yellow-500 fill-current" : "text-slate-700"
+                        onClick={() => setReviewValue("rating", star)}
+                        className={`w-8 h-8 cursor-pointer transition-all ${star <= watchRating ? "text-yellow-500 fill-current" : "text-slate-700"
                           }`}
                       />
                     ))}
@@ -952,10 +965,9 @@ const Dashboard = () => {
                   <textarea
                     required
                     rows={4}
-                    value={reviewForm.comment}
-                    onChange={(e) => setReviewForm({ ...reviewForm, comment: e.target.value })}
                     placeholder="Tell others about your experience..."
                     className="input-premium w-full resize-none"
+                    {...registerReview("comment", { required: "Comment is required" })}
                   />
                 </div>
 

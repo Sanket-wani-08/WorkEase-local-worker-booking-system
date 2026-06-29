@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
 import { useAppSelector } from "../hooks/storeHooks";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
 import { bookingService } from "../services/booking.service";
 import { workerService } from "../services/worker.service";
 import { categoryService } from "../services/category.service";
@@ -133,14 +134,22 @@ const Booking = () => {
   const [gettingLocation, setGettingLocation] = useState(false);
   const [showMap, setShowMap] = useState(false);
 
-  const [form, setForm] = useState<any>({
-    address: "",
-    phone: "",
-    bookingDate: "",
-    paymentMethod: "COD",
-    subcategory: "",
-    totalAmount: 199, // base price
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    defaultValues: {
+      address: "",
+      phone: "",
+      bookingDate: "",
+      paymentMethod: "COD",
+      subcategory: "",
+      totalAmount: 199,
+    }
   });
+
+  const watchAddress = watch("address");
+  const watchSubcategory = watch("subcategory");
+  const watchTotalAmount = watch("totalAmount");
+  const watchPaymentMethod = watch("paymentMethod");
+  const watchPhone = watch("phone");
 
   const [selectedLocation, setSelectedLocation] = useState<[number, number]>([
     23.0225, 72.5714,
@@ -177,10 +186,7 @@ const Booking = () => {
       if (!isBroadcast && workers.length > 0) {
         const foundWorker = workers.find((w: any) => w._id === id);
         setWorker(foundWorker);
-        setForm((prev: any) => ({
-          ...prev,
-          totalAmount: foundWorker?.price || 199,
-        }));
+        setValue("totalAmount", foundWorker?.price || 199);
         
         const workerCat = catRes.find((c: any) => c.name === foundWorker?.category);
         if (workerCat) setSubcategories(workerCat.subcategories || []);
@@ -191,20 +197,31 @@ const Booking = () => {
           category: categoryParam,
           price: price,
         });
-        setForm((prev: any) => ({ ...prev, totalAmount: price }));
+        setValue("totalAmount", price);
         
         const cat = catRes.find((c: any) => c.name === categoryParam);
         if (cat) setSubcategories(cat.subcategories || []);
       }
     }
-  }, [id, navigate, isBroadcast, categoryParam, keyRes, catRes, workers, isAuthenticated, reduxRole]);
+  }, [id, navigate, isBroadcast, categoryParam, keyRes, catRes, workers, isAuthenticated, reduxRole, setValue]);
+
+  // Update totalAmount when subcategory changes
+  useEffect(() => {
+    if (watchSubcategory) {
+      const newPrice =
+        subcategoryPrices[watchSubcategory] ||
+        subcategoryPrices[categoryParam || ""] ||
+        199;
+      setValue("totalAmount", newPrice);
+    }
+  }, [watchSubcategory, categoryParam, setValue]);
 
   // auto-geocoding
   useEffect(() => {
     if (
-      !form.address ||
-      form.address.length < 5 ||
-      form.address === "Current GPS Location Detected"
+      !watchAddress ||
+      watchAddress.length < 5 ||
+      watchAddress === "Current GPS Location Detected"
     )
       return;
 
@@ -212,7 +229,7 @@ const Booking = () => {
       try {
         // add user-agent as per nominatim usage policy
         const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(form.address)}&limit=1`,
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(watchAddress)}&limit=1`,
           {
             headers: {
               "User-Agent": "WorkEase-App",
@@ -232,7 +249,7 @@ const Booking = () => {
     }, 1200);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [form.address]);
+  }, [watchAddress]);
 
   const handleGetCurrentLocation = () => {
     setGettingLocation(true);
@@ -240,10 +257,7 @@ const Booking = () => {
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setSelectedLocation([latitude, longitude]);
-        setForm((prev: any) => ({
-          ...prev,
-          address: "Current GPS Location Detected",
-        }));
+        setValue("address", "Current GPS Location Detected");
         setGettingLocation(false);
         toast.success("Location captured!");
       },
@@ -254,8 +268,6 @@ const Booking = () => {
       },
       { enableHighAccuracy: true },
     );
-  };
-
   const verifyPaymentMutation = useMutation({
     mutationFn: (data: { response: any, bookingId: string }) => bookingService.verifyPayment({
       ...data.response,
@@ -284,7 +296,7 @@ const Booking = () => {
   const bookingMutation = useMutation({
     mutationFn: bookingService.createBooking,
     onSuccess: (data) => {
-      if (form.paymentMethod === "COD") {
+      if (watchPaymentMethod === "COD") {
         toast.success("Booking successful!");
         setLoading(false);
         navigate(`/tracking/${data.booking._id}`);
@@ -304,7 +316,7 @@ const Booking = () => {
         },
         prefill: {
           name: "User",
-          contact: form.phone,
+          contact: watchPhone,
         },
         theme: {
           color: "#3b82f6",
@@ -326,19 +338,18 @@ const Booking = () => {
     }
   });
 
-  const handleSubmit = (e: any) => {
-    e.preventDefault();
+  const onSubmit = (data: any) => {
     setLoading(true);
 
     bookingMutation.mutate({
       worker: isBroadcast ? null : id,
-      ...form,
+      ...data,
       service:
-        form.subcategory ||
+        data.subcategory ||
         categoryParam ||
         worker?.category ||
         "General Service",
-      amount: form.totalAmount + 49, // price + visiting charge
+      amount: data.totalAmount + 49, // price + visiting charge
       userLocation: {
         type: "Point",
         coordinates: [selectedLocation[1], selectedLocation[0]], // [lng, lat] format for geojson
@@ -402,10 +413,10 @@ const Booking = () => {
                 <div className="space-y-3 pt-4 border-t border-slate-800">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">
-                      Service Charge ({form.subcategory || "Base"})
+                      Service Charge ({watchSubcategory || "Base"})
                     </span>
                     <span className="text-white font-bold">
-                      ₹{form.totalAmount}
+                      ₹{watchTotalAmount}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
@@ -417,7 +428,7 @@ const Booking = () => {
                   <div className="flex justify-between text-base pt-2 border-t border-slate-800/50">
                     <span className="text-white font-bold">Total Amount</span>
                     <span className="text-accent font-extrabold text-xl">
-                      ₹{form.totalAmount + 49}
+                      ₹{watchTotalAmount + 49}
                     </span>
                   </div>
                 </div>
@@ -465,7 +476,7 @@ const Booking = () => {
             animate={{ opacity: 1, x: 0 }}
             className="card-premium"
           >
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <AnimatePresence>
                 {showMap && (
                   <motion.div
@@ -484,7 +495,7 @@ const Booking = () => {
                         position={selectedLocation}
                         setPosition={setSelectedLocation}
                         setAddress={(addr) =>
-                          setForm((prev: any) => ({ ...prev, address: addr }))
+                          setValue("address", addr)
                         }
                       />
                       <MapRefresher />
@@ -502,19 +513,7 @@ const Booking = () => {
                 <select
                   required
                   className="input-modern appearance-none"
-                  value={form.subcategory}
-                  onChange={(e) => {
-                    const sub = e.target.value;
-                    const newPrice =
-                      subcategoryPrices[sub] ||
-                      subcategoryPrices[categoryParam || ""] ||
-                      199;
-                    setForm({
-                      ...form,
-                      subcategory: sub,
-                      totalAmount: newPrice,
-                    });
-                  }}
+                  {...register("subcategory", { required: "Subcategory task is required" })}
                 >
                   <option value="">-- Choose Type of Task --</option>
                   {subcategories.map((sub) => (
@@ -524,6 +523,7 @@ const Booking = () => {
                   ))}
                   <option value="Other / General">Other / General</option>
                 </select>
+                {errors.subcategory && <p className="text-xs text-red-500">{errors.subcategory.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -536,11 +536,9 @@ const Booking = () => {
                   placeholder="Street, Landmark, City"
                   required
                   className="input-modern"
-                  value={form.address}
-                  onChange={(e) =>
-                    setForm({ ...form, address: e.target.value })
-                  }
+                  {...register("address", { required: "Service address is required" })}
                 />
+                {errors.address && <p className="text-xs text-red-500">{errors.address.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -553,9 +551,15 @@ const Booking = () => {
                   placeholder="10-digit phone number"
                   required
                   className="input-modern"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  {...register("phone", {
+                    required: "Contact phone is required",
+                    pattern: {
+                      value: /^[0-9]{10}$/,
+                      message: "Please enter a valid 10-digit phone number"
+                    }
+                  })}
                 />
+                {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -567,11 +571,9 @@ const Booking = () => {
                   type="date"
                   required
                   className="input-modern"
-                  value={form.bookingDate}
-                  onChange={(e) =>
-                    setForm({ ...form, bookingDate: e.target.value })
-                  }
+                  {...register("bookingDate", { required: "Preferred date is required" })}
                 />
+                {errors.bookingDate && <p className="text-xs text-red-500">{errors.bookingDate.message}</p>}
               </div>
 
               <div className="space-y-2">
@@ -581,14 +583,12 @@ const Booking = () => {
                 </label>
                 <select
                   className="input-modern appearance-none"
-                  value={form.paymentMethod}
-                  onChange={(e) =>
-                    setForm({ ...form, paymentMethod: e.target.value })
-                  }
+                  {...register("paymentMethod", { required: "Payment method is required" })}
                 >
                   <option value="COD">Cash After Service</option>
                   <option value="ONLINE">Online Payment (Razorpay)</option>
                 </select>
+                {errors.paymentMethod && <p className="text-xs text-red-500">{errors.paymentMethod.message}</p>}
               </div>
 
               <button
