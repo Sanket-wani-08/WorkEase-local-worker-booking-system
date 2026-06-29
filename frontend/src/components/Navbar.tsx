@@ -55,7 +55,7 @@ const Navbar = () => {
 
   const unreadCount = unreadCountData?.unreadCount || 0;
 
-  const { data: notificationsData = [] } = useQuery({
+  const { data: notificationsData } = useQuery({
     queryKey: ["notifications"],
     queryFn: notificationService.getNotifications,
     enabled: !!isAuthenticated && showNotifications,

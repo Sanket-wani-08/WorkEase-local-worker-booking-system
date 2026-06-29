@@ -14,7 +14,7 @@ export const bookingService = {
     return data;
   },
   getAllBookings: async () => {
-    const { data } = await API.get('/bookings');
+    const { data } = await API.get('/bookings/all');
     return data;
   },
   createBooking: async (bookingData: any) => {
