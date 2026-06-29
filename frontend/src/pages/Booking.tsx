@@ -118,6 +118,9 @@ const subcategoryPrices: Record<string, number> = {
   "Geyser Repair": 200,
 };
 
+import { yupResolver } from "@hookform/resolvers/yup";
+import { bookingSchema } from "../utils/validationSchemas";
+
 const Booking = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -135,6 +138,7 @@ const Booking = () => {
   const [showMap, setShowMap] = useState(false);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    resolver: yupResolver(bookingSchema),
     defaultValues: {
       address: "",
       phone: "",
@@ -513,7 +517,7 @@ const Booking = () => {
                 <select
                   required
                   className="input-modern appearance-none"
-                  {...register("subcategory", { required: "Subcategory task is required" })}
+                  {...register("subcategory")}
                 >
                   <option value="">-- Choose Type of Task --</option>
                   {subcategories.map((sub) => (
@@ -536,7 +540,7 @@ const Booking = () => {
                   placeholder="Street, Landmark, City"
                   required
                   className="input-modern"
-                  {...register("address", { required: "Service address is required" })}
+                  {...register("address")}
                 />
                 {errors.address && <p className="text-xs text-red-500">{errors.address.message}</p>}
               </div>
@@ -551,13 +555,7 @@ const Booking = () => {
                   placeholder="10-digit phone number"
                   required
                   className="input-modern"
-                  {...register("phone", {
-                    required: "Contact phone is required",
-                    pattern: {
-                      value: /^[0-9]{10}$/,
-                      message: "Please enter a valid 10-digit phone number"
-                    }
-                  })}
+                  {...register("phone")}
                 />
                 {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
               </div>
@@ -571,7 +569,7 @@ const Booking = () => {
                   type="date"
                   required
                   className="input-modern"
-                  {...register("bookingDate", { required: "Preferred date is required" })}
+                  {...register("bookingDate")}
                 />
                 {errors.bookingDate && <p className="text-xs text-red-500">{errors.bookingDate.message}</p>}
               </div>
@@ -583,7 +581,7 @@ const Booking = () => {
                 </label>
                 <select
                   className="input-modern appearance-none"
-                  {...register("paymentMethod", { required: "Payment method is required" })}
+                  {...register("paymentMethod")}
                 >
                   <option value="COD">Cash After Service</option>
                   <option value="ONLINE">Online Payment (Razorpay)</option>

@@ -23,6 +23,9 @@ import { userService } from "../services/user.service";
 import { reviewService } from "../services/review.service";
 
 
+import { yupResolver } from "@hookform/resolvers/yup";
+import { categorySchema, reviewSchema } from "../utils/validationSchemas";
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -36,7 +39,8 @@ const Dashboard = () => {
   const [activeChatBookingId, setActiveChatBookingId] = useState<string | null>(null);
 
   // Category useForm hook
-  const { register: registerCategory, handleSubmit: handleCategorySubmit, reset: resetCategoryForm } = useForm({
+  const { register: registerCategory, handleSubmit: handleCategorySubmit, reset: resetCategoryForm, formState: { errors: categoryErrors } } = useForm({
+    resolver: yupResolver(categorySchema),
     defaultValues: {
       name: "",
       subcategories: ""
@@ -44,7 +48,8 @@ const Dashboard = () => {
   });
 
   // Review useForm hook
-  const { register: registerReview, handleSubmit: handleReviewSubmitForm, reset: resetReviewForm, setValue: setReviewValue, watch: watchReview } = useForm({
+  const { register: registerReview, handleSubmit: handleReviewSubmitForm, reset: resetReviewForm, setValue: setReviewValue, watch: watchReview, formState: { errors: reviewErrors } } = useForm({
+    resolver: yupResolver(reviewSchema),
     defaultValues: {
       rating: 5,
       comment: ""
@@ -483,8 +488,9 @@ const Dashboard = () => {
                         required
                         placeholder="e.g. Home Cleaning"
                         className="input-premium w-full text-sm py-2 px-3"
-                        {...registerCategory("name", { required: "Category name is required" })}
+                        {...registerCategory("name")}
                       />
+                      {categoryErrors.name && <p className="text-xs text-red-500 mt-1">{categoryErrors.name.message}</p>}
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Subcategories (Comma Separated)</label>
@@ -493,8 +499,9 @@ const Dashboard = () => {
                         rows={3}
                         placeholder="e.g. Deep Cleaning, Sofa Cleaning, Bathroom Cleaning"
                         className="input-premium w-full text-sm py-2 px-3 resize-none"
-                        {...registerCategory("subcategories", { required: "Subcategories are required" })}
+                        {...registerCategory("subcategories")}
                       />
+                      {categoryErrors.subcategories && <p className="text-xs text-red-500 mt-1">{categoryErrors.subcategories.message}</p>}
                     </div>
                     <button
                       type="submit"
@@ -943,9 +950,7 @@ const Dashboard = () => {
                 <button onClick={() => setSelectedBookingForReview(null)} className="text-slate-400 hover:text-white">
                   <X className="w-6 h-6" />
                 </button>
-              </div>
-
-              <form onSubmit={handleReviewSubmitForm(onReviewSubmit)} className="space-y-6">
+                       <form onSubmit={handleReviewSubmitForm(onReviewSubmit)} className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wider">Rating</label>
                   <div className="flex gap-2">
@@ -958,6 +963,7 @@ const Dashboard = () => {
                       />
                     ))}
                   </div>
+                  {reviewErrors.rating && <p className="text-xs text-red-500 mt-1">{reviewErrors.rating.message}</p>}
                 </div>
 
                 <div>
@@ -967,13 +973,13 @@ const Dashboard = () => {
                     rows={4}
                     placeholder="Tell others about your experience..."
                     className="input-premium w-full resize-none"
-                    {...registerReview("comment", { required: "Comment is required" })}
+                    {...registerReview("comment")}
                   />
+                  {reviewErrors.comment && <p className="text-xs text-red-500 mt-1">{reviewErrors.comment.message}</p>}
                 </div>
 
                 <button type="submit" className="btn-primary w-full py-3 text-lg">
                   Submit Review
-                </button>
               </form>
             </motion.div>
           </div>

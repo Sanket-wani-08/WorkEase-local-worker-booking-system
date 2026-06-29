@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { registerSchema } from "../utils/validationSchemas";
 import { authService } from "../services/auth.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -13,7 +15,8 @@ const Register = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const { register, handleSubmit, watch, formState: { errors } } = useForm({
+  const { register, handleSubmit, formState: { errors } } = useForm({
+    resolver: yupResolver(registerSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -41,12 +44,6 @@ const Register = () => {
 
   const onSubmit = (data: any) => {
     setError("");
-
-    if (data.password !== data.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
-
     registerMutation.mutate(data);
   };
 
@@ -99,7 +96,7 @@ const Register = () => {
                 placeholder="e.g. John Doe" 
                 required
                 className="input-modern"
-                {...register("name", { required: "Name is required" })}
+                {...register("name")}
               />
               {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
@@ -114,13 +111,7 @@ const Register = () => {
                 placeholder="john@example.com" 
                 required
                 className="input-modern"
-                {...register("email", {
-                  required: "Email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address"
-                  }
-                })}
+                {...register("email")}
               />
               {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
             </div>
@@ -134,13 +125,7 @@ const Register = () => {
                 placeholder="10-digit number" 
                 required
                 className="input-modern"
-                {...register("phone", {
-                  required: "Phone number is required",
-                  pattern: {
-                    value: /^[0-9]{10}$/,
-                    message: "Please enter a valid 10-digit phone number"
-                  }
-                })}
+                {...register("phone")}
               />
               {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
             </div>
@@ -156,13 +141,7 @@ const Register = () => {
                 required
                 minLength={6}
                 className="input-modern"
-                {...register("password", {
-                  required: "Password is required",
-                  minLength: {
-                    value: 6,
-                    message: "Password must be at least 6 characters"
-                  }
-                })}
+                {...register("password")}
               />
               {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
             </div>
@@ -178,14 +157,7 @@ const Register = () => {
                 required
                 minLength={6}
                 className="input-modern"
-                {...register("confirmPassword", {
-                  required: "Confirm password is required",
-                  validate: (val) => {
-                    if (watch('password') !== val) {
-                      return "Your passwords do not match";
-                    }
-                  }
-                })}
+                {...register("confirmPassword")}
               />
               {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>}
             </div>
@@ -198,7 +170,7 @@ const Register = () => {
               <select 
                 className="input-modern"
                 required
-                {...register("securityQuestion", { required: "Security question is required" })}
+                {...register("securityQuestion")}
               >
                 <option>What is your pet's name?</option>
                 <option>What is your mother's maiden name?</option>
@@ -217,7 +189,7 @@ const Register = () => {
                 placeholder="e.g. Fluffy" 
                 required
                 className="input-modern"
-                {...register("securityAnswer", { required: "Security answer is required" })}
+                {...register("securityAnswer")}
               />
               {errors.securityAnswer && <p className="text-xs text-red-500">{errors.securityAnswer.message}</p>}
             </div>

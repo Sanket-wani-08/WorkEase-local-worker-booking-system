@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { loginSchema } from "../utils/validationSchemas";
 import { authService } from "../services/auth.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -19,6 +21,8 @@ const Login = () => {
   const dispatch = useAppDispatch();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: yupResolver(loginSchema),
+    context: { activeTab },
     defaultValues: {
       phone: "",
       email: "",
@@ -158,13 +162,7 @@ const Login = () => {
                         placeholder="10-digit number" 
                         required
                         className="input-modern"
-                        {...register("phone", {
-                          required: "Phone number is required",
-                          pattern: {
-                            value: /^[0-9]{10}$/,
-                            message: "Please enter a valid 10-digit phone number"
-                          }
-                        })}
+                        {...register("phone")}
                       />
                       {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
                     </div>
@@ -179,13 +177,7 @@ const Login = () => {
                         placeholder="john@example.com" 
                         required
                         className="input-modern"
-                        {...register("email", {
-                          required: "Email address is required",
-                          pattern: {
-                            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                            message: "Invalid email address"
-                          }
-                        })}
+                        {...register("email")}
                       />
                       {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
                     </div>
@@ -201,13 +193,7 @@ const Login = () => {
                       placeholder="Enter password" 
                       required
                       className="input-modern"
-                      {...register("password", {
-                        required: "Password is required",
-                        minLength: {
-                          value: 6,
-                          message: "Password must be at least 6 characters"
-                        }
-                      })}
+                      {...register("password")}
                     />
                     {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
                     <div className="flex justify-end">

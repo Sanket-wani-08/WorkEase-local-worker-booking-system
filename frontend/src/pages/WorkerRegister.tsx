@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { workerSchema } from "../utils/validationSchemas";
 import { categoryService } from "../services/category.service";
 import { workerService } from "../services/worker.service";
 import Navbar from "../components/Navbar";
@@ -16,6 +18,7 @@ const WorkerRegister = () => {
   const [subcategories, setSubcategories] = useState<string[]>([]);
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm({
+    resolver: yupResolver(workerSchema),
     defaultValues: {
       securityQuestion: "What is your pet's name?",
       securityAnswer: "",
@@ -23,7 +26,7 @@ const WorkerRegister = () => {
       phone: "",
       category: "",
       subcategory: "",
-      experience: "",
+      experience: 0,
       aadhaarNumber: "",
       password: ""
     }
@@ -125,7 +128,7 @@ const WorkerRegister = () => {
                   placeholder="e.g. John Doe" 
                   required
                   className="input-modern"
-                  {...register("name", { required: "Name is required" })}
+                  {...register("name")}
                 />
                 {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
               </div>
@@ -139,13 +142,7 @@ const WorkerRegister = () => {
                   placeholder="10-digit number" 
                   required
                   className="input-modern"
-                  {...register("phone", {
-                    required: "Phone number is required",
-                    pattern: {
-                      value: /^[0-9]{10}$/,
-                      message: "Please enter a valid 10-digit phone number"
-                    }
-                  })}
+                  {...register("phone")}
                 />
                 {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
               </div>
@@ -160,7 +157,7 @@ const WorkerRegister = () => {
                     required
                     className="input-modern appearance-none w-full"
                     disabled={loadingCats}
-                    {...register("category", { required: "Category is required" })}
+                    {...register("category")}
                   >
                     <option value="">Select Category</option>
                     {categories.map((cat: any) => (
@@ -185,7 +182,7 @@ const WorkerRegister = () => {
                   required 
                   className="input-modern appearance-none" 
                   disabled={!selectedCategory || subcategories.length === 0}
-                  {...register("subcategory", { required: "Specialization is required" })}
+                  {...register("subcategory")}
                 >
                   <option value="">Select Sub‑Category</option>
                   {subcategories.map((sub: string) => (
@@ -205,7 +202,7 @@ const WorkerRegister = () => {
                   placeholder="e.g. 5" 
                   min="0"
                   className="input-modern"
-                  {...register("experience", { required: "Experience is required" })}
+                  {...register("experience")}
                 />
                 {errors.experience && <p className="text-xs text-red-500">{errors.experience.message}</p>}
               </div>
@@ -221,13 +218,7 @@ const WorkerRegister = () => {
                   maxLength={12}
                   minLength={12}
                   className="input-modern"
-                  {...register("aadhaarNumber", {
-                    required: "Aadhaar number is required",
-                    pattern: {
-                      value: /^[0-9]{12}$/,
-                      message: "Please enter a valid 12-digit Aadhaar number"
-                    }
-                  })}
+                  {...register("aadhaarNumber")}
                 />
                 {errors.aadhaarNumber && <p className="text-xs text-red-500">{errors.aadhaarNumber.message}</p>}
               </div>
@@ -243,13 +234,7 @@ const WorkerRegister = () => {
                   required
                   minLength={6}
                   className="input-modern"
-                  {...register("password", {
-                    required: "Password is required",
-                    minLength: {
-                      value: 6,
-                      message: "Password must be at least 6 characters"
-                    }
-                  })}
+                  {...register("password")}
                 />
                 {errors.password && <p className="text-xs text-red-500">{errors.password.message}</p>}
               </div>
@@ -262,7 +247,7 @@ const WorkerRegister = () => {
                 <select 
                   className="input-modern"
                   required
-                  {...register("securityQuestion", { required: "Security question is required" })}
+                  {...register("securityQuestion")}
                 >
                   <option>What is your pet's name?</option>
                   <option>What is your mother's maiden name?</option>
@@ -281,7 +266,7 @@ const WorkerRegister = () => {
                   placeholder="e.g. Fluffy" 
                   required
                   className="input-modern"
-                  {...register("securityAnswer", { required: "Security answer is required" })}
+                  {...register("securityAnswer")}
                 />
                 {errors.securityAnswer && <p className="text-xs text-red-500">{errors.securityAnswer.message}</p>}
               </div>

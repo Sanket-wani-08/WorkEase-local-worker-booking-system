@@ -11,6 +11,9 @@ import { User, Camera, Mail, Phone, Briefcase, Star, MapPin, Loader2, Save } fro
 import { motion } from "framer-motion";
 import { useAppSelector } from "../hooks/storeHooks";
 
+import { yupResolver } from "@hookform/resolvers/yup";
+import { profileSchema } from "../utils/validationSchemas";
+
 const Profile = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -21,6 +24,8 @@ const Profile = () => {
     const [imageFile, setImageFile] = useState<File | null>(null);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm({
+        resolver: yupResolver(profileSchema),
+        context: { role: reduxRole },
         defaultValues: {
             name: "",
             phone: "",
@@ -180,7 +185,7 @@ const Profile = () => {
                                     <input 
                                         type="text" 
                                         className="input-premium w-full"
-                                        {...register("name", { required: "Name is required" })}
+                                        {...register("name")}
                                     />
                                     {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
                                 </div>
@@ -192,13 +197,7 @@ const Profile = () => {
                                         <input 
                                             type="text" 
                                             className="input-premium w-full pl-12"
-                                            {...register("phone", {
-                                                required: "Phone is required",
-                                                pattern: {
-                                                    value: /^[0-9]{10}$/,
-                                                    message: "Please enter a valid 10-digit phone number"
-                                                }
-                                            })}
+                                            {...register("phone")}
                                         />
                                     </div>
                                     {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
@@ -233,7 +232,7 @@ const Profile = () => {
                                         <input 
                                             type="text" 
                                             className="input-premium w-full"
-                                            {...register("category", { required: "Category is required" })}
+                                            {...register("category")}
                                         />
                                         {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
                                     </div>
@@ -243,7 +242,7 @@ const Profile = () => {
                                         <input 
                                             type="text" 
                                             className="input-premium w-full"
-                                            {...register("subcategory", { required: "Specialization is required" })}
+                                            {...register("subcategory")}
                                         />
                                         {errors.subcategory && <p className="text-xs text-red-500">{errors.subcategory.message}</p>}
                                     </div>
