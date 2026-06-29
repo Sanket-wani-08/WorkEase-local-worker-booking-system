@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -18,10 +18,12 @@ const Profile = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [profile, setProfile] = useState<any>(null);
-    const [role, setRole] = useState<"worker" | "user" | null>(null);
+    const [role, setRole] = useState<"worker" | "user" | "admin" | null>(null);
     const [saving, setSaving] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
+
+    const { isAuthenticated, role: reduxRole } = useAppSelector((state) => state.auth);
 
     const { register, handleSubmit, reset, formState: { errors } } = useForm({
         resolver: yupResolver(profileSchema),
@@ -31,11 +33,9 @@ const Profile = () => {
             phone: "",
             category: "",
             subcategory: "",
-            experience: ""
+            experience: 0
         }
     });
-
-    const { isAuthenticated, role: reduxRole } = useAppSelector((state) => state.auth);
 
     const isWorker = reduxRole === 'worker';
 
@@ -60,7 +60,7 @@ const Profile = () => {
                     phone: profileRes.phone || "",
                     category: profileRes.category || "",
                     subcategory: profileRes.subcategory || "",
-                    experience: profileRes.experience || ""
+                    experience: Number(profileRes.experience) || 0
                 });
             } else {
                 setRole(profileRes.role === "admin" ? "admin" : "user");
@@ -69,19 +69,20 @@ const Profile = () => {
                     phone: profileRes.phone || "",
                     category: "",
                     subcategory: "",
-                    experience: ""
+                    experience: 0
                 });
             }
         }
     }, [profileRes, isAuthenticated, navigate, isWorker, reset]);
 
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+    const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
             setImageFile(file);
             setPreviewImage(URL.createObjectURL(file));
         }
-    };
+    }, []);
 
     const updateProfileMutation = useMutation({
         mutationFn: (formData: FormData) => {
@@ -98,7 +99,7 @@ const Profile = () => {
         }
     });
 
-    const onSubmit = (data: any) => {
+    const onSubmit = useCallback((data: any) => {
         setSaving(true);
         
         const formData = new FormData();
@@ -116,7 +117,7 @@ const Profile = () => {
         }
 
         updateProfileMutation.mutate(formData);
-    };
+    }, [role, imageFile, updateProfileMutation]);
 
     if (loading) {
         return (

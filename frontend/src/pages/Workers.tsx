@@ -91,7 +91,7 @@ const Workers = () => {
                 className="input-modern pl-11 w-full sm:w-60 appearance-none"
               >
                 <option value="">All Categories</option>
-                {categories?.map(cat => (
+                {categories?.map((cat: any) => (
                   <option key={cat?._id || cat?.name} value={cat?.name}>{cat?.name}</option>
                 ))}
               </select>
@@ -111,7 +111,7 @@ const Workers = () => {
           >
             All Workers
           </button>
-          {categories?.map(cat => (
+          {categories?.map((cat: any) => (
             <button
               key={cat?._id || cat?.name}
               onClick={() => setCategory(cat?.name || "")}

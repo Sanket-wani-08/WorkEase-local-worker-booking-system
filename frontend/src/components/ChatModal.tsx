@@ -35,6 +35,7 @@ const ChatModal: React.FC<ChatModalProps> = ({ bookingId, isOpen, onClose, curre
 
     useEffect(() => {
         if (initialMessages.length > 0) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setMessages(initialMessages);
         }
     }, [initialMessages]);

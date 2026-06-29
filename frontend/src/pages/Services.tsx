@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { categoryService } from "../services/category.service";
@@ -94,7 +93,7 @@ const Services = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {categories.map((cat, i) => (
+            {categories.map((cat: any, i: number) => (
               <motion.div
                 key={cat._id}
                 initial={{ opacity: 0, scale: 0.95 }}

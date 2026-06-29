@@ -69,6 +69,7 @@ export const bookingSchema = yup.object().shape({
   bookingDate: yup.string().required(MSG.required("Preferred Date")),
   paymentMethod: yup.string().required(MSG.required("Payment Method")),
   subcategory: yup.string().required(MSG.required("Specific Task")),
+  totalAmount: yup.number().typeError(MSG.number("Total Amount")).optional(),
 });
 
 export const reviewSchema = yup.object().shape({
@@ -92,6 +93,11 @@ export const profileSchema = yup.object().shape({
   subcategory: yup.string().when("$role", {
     is: "worker",
     then: (schema) => schema.required(MSG.required("Specialization")),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  experience: yup.number().when("$role", {
+    is: "worker",
+    then: (schema) => schema.typeError(MSG.number("Experience")).min(0).required(MSG.required("Experience")),
     otherwise: (schema) => schema.notRequired(),
   }),
 });

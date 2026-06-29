@@ -255,7 +255,7 @@ const Booking = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [watchAddress]);
 
-  const handleGetCurrentLocation = () => {
+  const handleGetCurrentLocation = useCallback(() => {
     setGettingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -272,6 +272,7 @@ const Booking = () => {
       },
       { enableHighAccuracy: true },
     );
+  }, [setValue]);
   const verifyPaymentMutation = useMutation({
     mutationFn: (data: { response: any, bookingId: string }) => bookingService.verifyPayment({
       ...data.response,
@@ -342,7 +343,7 @@ const Booking = () => {
     }
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = useCallback((data: any) => {
     setLoading(true);
 
     bookingMutation.mutate({
@@ -360,7 +361,7 @@ const Booking = () => {
       },
       category: categoryParam || worker?.category,
     });
-  };
+  }, [isBroadcast, id, categoryParam, worker, selectedLocation, bookingMutation]);
 
   return (
     <div className="min-h-screen bg-primary">
@@ -432,7 +433,7 @@ const Booking = () => {
                   <div className="flex justify-between text-base pt-2 border-t border-slate-800/50">
                     <span className="text-white font-bold">Total Amount</span>
                     <span className="text-accent font-extrabold text-xl">
-                      ₹{watchTotalAmount + 49}
+                      ₹{(Number(watchTotalAmount) || 0) + 49}
                     </span>
                   </div>
                 </div>

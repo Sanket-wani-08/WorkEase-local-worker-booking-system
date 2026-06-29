@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import socket from "../socket/socket";
 import Navbar from "../components/Navbar";
@@ -56,6 +57,7 @@ const Dashboard = () => {
     }
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const watchRating = watchReview("rating");
 
   const { isAuthenticated, role: reduxRole } = useAppSelector((state) => state.auth);
@@ -89,25 +91,25 @@ const Dashboard = () => {
     enabled: role === 'admin'
   });
 
-  const { data: pendingWorkers = [], isLoading: pendingLoading } = useQuery({
+  const { data: pendingWorkers = [], isLoading: pendingLoading } = useQuery<any[]>({
     queryKey: ['pendingWorkers'],
     queryFn: dashboardService.getPendingWorkers,
     enabled: role === 'admin'
   });
 
-  const { data: allBookings = [], isLoading: allBookingsLoading } = useQuery({
+  const { data: allBookings = [], isLoading: allBookingsLoading } = useQuery<any[]>({
     queryKey: ['bookings', 'all'],
     queryFn: bookingService.getAllBookings,
     enabled: role === 'admin'
   });
 
-  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery<any[]>({
     queryKey: ['categories'],
     queryFn: categoryService.getCategories,
     enabled: role === 'admin'
   });
 
-  const { data: workerBookings = [], isLoading: workerBookingsLoading } = useQuery({
+  const { data: workerBookings = [], isLoading: workerBookingsLoading } = useQuery<any[]>({
     queryKey: ['bookings', 'worker'],
     queryFn: bookingService.getWorkerBookings,
     enabled: role === 'worker'
@@ -119,7 +121,7 @@ const Dashboard = () => {
     enabled: role === 'worker'
   });
 
-  const { data: userBookings = [], isLoading: userBookingsLoading } = useQuery({
+  const { data: userBookings = [], isLoading: userBookingsLoading } = useQuery<any[]>({
     queryKey: ['bookings', 'user'],
     queryFn: bookingService.getMyBookings,
     enabled: role === 'user'
@@ -151,7 +153,7 @@ const Dashboard = () => {
     onError: () => toast.error("Failed to update worker status")
   });
 
-  const handleWorkerAction = async (id: string, action: "verify" | "reject") => {
+  const handleWorkerAction = useCallback(async (id: string, action: "verify" | "reject") => {
     if (action === "verify") {
       verifyWorkerMutation.mutate(id);
     } else {
@@ -159,7 +161,7 @@ const Dashboard = () => {
       if (reason === null) return;
       rejectWorkerMutation.mutate({ id, reason });
     }
-  };
+  }, [verifyWorkerMutation, rejectWorkerMutation]);
 
   const addCategoryMutation = useMutation({
     mutationFn: categoryService.createCategory,
@@ -175,11 +177,11 @@ const Dashboard = () => {
     }
   });
 
-  const onAddCategorySubmit = (data: any) => {
+  const onAddCategorySubmit = useCallback((data: any) => {
     setIsAddingCategory(true);
     const subArr = data.subcategories.split(",").map((s: string) => s.trim()).filter((s: string) => s);
     addCategoryMutation.mutate({ name: data.name, subcategories: subArr });
-  };
+  }, [addCategoryMutation]);
 
   const updateCategoryMutation = useMutation({
     mutationFn: ({ id, data }: { id: string, data: any }) => categoryService.updateCategory(id, data),
@@ -191,10 +193,10 @@ const Dashboard = () => {
     onError: () => toast.error("Failed to update category")
   });
 
-  const handleUpdateCategory = (id: string) => {
+  const handleUpdateCategory = useCallback((id: string) => {
     const subArr = editCategoryForm.subcategories.split(",").map(s => s.trim()).filter(s => s);
     updateCategoryMutation.mutate({ id, data: { name: editCategoryForm.name, subcategories: subArr } });
-  };
+  }, [editCategoryForm, updateCategoryMutation]);
 
   const deleteCategoryMutation = useMutation({
     mutationFn: categoryService.deleteCategory,
@@ -205,10 +207,10 @@ const Dashboard = () => {
     onError: () => toast.error("Failed to delete category")
   });
 
-  const handleDeleteCategory = (id: string) => {
+  const handleDeleteCategory = useCallback((id: string) => {
     if (!window.confirm("Are you sure you want to delete this category?")) return;
     deleteCategoryMutation.mutate(id);
-  };
+  }, [deleteCategoryMutation]);
 
   const updateBookingStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string, status: string }) => bookingService.updateBookingStatus(id, status),
@@ -225,9 +227,9 @@ const Dashboard = () => {
     onError: (err: any) => toast.error(err.response?.data?.message || "Failed to update booking status")
   });
 
-  const updateBookingStatus = (id: string, status: string) => {
+  const updateBookingStatus = useCallback((id: string, status: string) => {
     updateBookingStatusMutation.mutate({ id, status });
-  };
+  }, [updateBookingStatusMutation]);
 
   const cancelBookingMutation = useMutation({
     mutationFn: bookingService.cancelBooking,
@@ -240,10 +242,10 @@ const Dashboard = () => {
     onError: () => toast.error("Failed to cancel booking")
   });
 
-  const handleCancelBooking = (id: string) => {
+  const handleCancelBooking = useCallback((id: string) => {
     if (!window.confirm("Are you sure you want to cancel this booking?")) return;
     cancelBookingMutation.mutate(id);
-  };
+  }, [cancelBookingMutation]);
 
   const updatePaymentStatusMutation = useMutation({
     mutationFn: ({ id, paymentStatus }: { id: string, paymentStatus: string }) => bookingService.requestPayment(id, paymentStatus),
@@ -254,9 +256,9 @@ const Dashboard = () => {
     onError: () => toast.error("Failed to update payment status")
   });
 
-  const updatePaymentStatus = (id: string, paymentStatus: string) => {
+  const updatePaymentStatus = useCallback((id: string, paymentStatus: string) => {
     updatePaymentStatusMutation.mutate({ id, paymentStatus });
-  };
+  }, [updatePaymentStatusMutation]);
 
   const reviewMutation = useMutation({
     mutationFn: reviewService.submitReview,
@@ -269,14 +271,14 @@ const Dashboard = () => {
     onError: () => toast.error("Failed to submit review")
   });
 
-  const onReviewSubmit = (data: any) => {
+  const onReviewSubmit = useCallback((data: any) => {
     reviewMutation.mutate({
       bookingId: selectedBookingForReview._id,
       worker: selectedBookingForReview.worker?._id,
       rating: data.rating,
       comment: data.comment
     });
-  };
+  }, [selectedBookingForReview, reviewMutation]);
 
   const StatusIcon = ({ status }: { status: string }) => {
     switch (status) {
@@ -417,7 +419,7 @@ const Dashboard = () => {
               <span className="ml-2 px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs font-bold">{pendingWorkers.length}</span>
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {pendingWorkers.map((worker) => (
+              {pendingWorkers.map((worker: any) => (
                 <motion.div
                   key={worker._id}
                   initial={{ opacity: 0, scale: 0.95 }}
@@ -517,7 +519,7 @@ const Dashboard = () => {
 
               <div className="lg:col-span-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {categories.map((category) => (
+                  {categories.map((category: any) => (
                     <div key={category._id} className="card-premium border border-slate-800/50 p-5 relative group">
                       {editingCategoryId === category._id ? (
                         <div className="space-y-3">
@@ -666,7 +668,7 @@ const Dashboard = () => {
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase">Active Bookings</p>
                     <h3 className="text-2xl font-black text-white">
-                      {bookings.filter(b => b.status === "Pending" || b.status === "Accepted").length}
+                      {bookings.filter((b: any) => b.status === "Pending" || b.status === "Accepted").length}
                     </h3>
                   </div>
                 </div>
@@ -679,7 +681,7 @@ const Dashboard = () => {
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase">Completed</p>
                     <h3 className="text-2xl font-black text-white">
-                      {bookings.filter(b => b.status === "Completed").length}
+                      {bookings.filter((b: any) => b.status === "Completed").length}
                     </h3>
                   </div>
                 </div>
@@ -692,7 +694,7 @@ const Dashboard = () => {
                   <div>
                     <p className="text-xs font-bold text-slate-500 uppercase">Total Spent</p>
                     <h3 className="text-2xl font-black text-white">
-                      ₹{bookings.filter(b => b.paymentStatus === "PAID").reduce((acc, b) => acc + b.amount, 0).toLocaleString()}
+                      ₹{bookings.filter((b: any) => b.paymentStatus === "PAID").reduce((acc: number, b: any) => acc + b.amount, 0).toLocaleString()}
                     </h3>
                   </div>
                 </div>
@@ -950,7 +952,9 @@ const Dashboard = () => {
                 <button onClick={() => setSelectedBookingForReview(null)} className="text-slate-400 hover:text-white">
                   <X className="w-6 h-6" />
                 </button>
-                       <form onSubmit={handleReviewSubmitForm(onReviewSubmit)} className="space-y-6">
+              </div>
+
+              <form onSubmit={handleReviewSubmitForm(onReviewSubmit)} className="space-y-6">
                 <div>
                   <label className="block text-sm font-bold text-slate-400 mb-2 uppercase tracking-wider">Rating</label>
                   <div className="flex gap-2">
@@ -980,6 +984,7 @@ const Dashboard = () => {
 
                 <button type="submit" className="btn-primary w-full py-3 text-lg">
                   Submit Review
+                </button>
               </form>
             </motion.div>
           </div>

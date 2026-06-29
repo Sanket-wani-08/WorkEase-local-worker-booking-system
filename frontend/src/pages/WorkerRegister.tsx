@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
@@ -69,14 +69,14 @@ const WorkerRegister = () => {
     }
   });
 
-  const onSubmit = (data: any) => {
+  const onSubmit = useCallback((data: any) => {
     const formData = new FormData();
     Object.keys(data).forEach(key => formData.append(key, data[key]));
 
     if (aadhaarImage) formData.append("aadhaarImage", aadhaarImage);
 
     registerMutation.mutate(formData);
-  };
+  }, [aadhaarImage, registerMutation]);
 
   if (success) {
     return (
