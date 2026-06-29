@@ -1,7 +1,11 @@
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
-import API from "../api/axios";
+import { useAppSelector } from "../hooks/storeHooks";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { bookingService } from "../services/booking.service";
+import { workerService } from "../services/worker.service";
+import { categoryService } from "../services/category.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import {
@@ -121,6 +125,7 @@ const Booking = () => {
   const categoryParam = searchParams.get("category");
 
   const [subcategories, setSubcategories] = useState<string[]>([]);
+  const { isAuthenticated, role: reduxRole } = useAppSelector((state) => state.auth);
 
   const [worker, setWorker] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -141,55 +146,58 @@ const Booking = () => {
     23.0225, 72.5714,
   ]);
 
+  const { data: workers = [] } = useQuery({
+    queryKey: ["workers"],
+    queryFn: () => workerService.searchWorkers({}),
+    enabled: !isBroadcast,
+  });
+
+  const { data: keyRes } = useQuery({
+    queryKey: ["razorpayKey"],
+    queryFn: bookingService.getRazorpayKey,
+  });
+
+  const { data: catRes = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryService.getCategories,
+  });
+
   useEffect(() => {
-    const token = localStorage.getItem("userToken");
-    if (!token) {
-      alert("Please login to book a worker");
+    if (!isAuthenticated || reduxRole !== 'user') {
+      alert("Please login as a user to book a worker");
       navigate("/login");
       return;
     }
 
-    const fetchWorkerAndKey = async () => {
-      try {
-        const [workerRes, keyRes, catRes] = await Promise.all([
-          !isBroadcast
-            ? API.get(`/workers/search`)
-            : Promise.resolve({ data: [] }),
-          API.get("/bookings/razorpay-key"),
-          API.get("/categories"),
-        ]);
+    if (keyRes) {
+      setRazorpayKey(keyRes.key);
+    }
 
-        if (!isBroadcast) {
-          const foundWorker = workerRes.data.find((w: any) => w._id === id);
-          setWorker(foundWorker);
-          setForm((prev: any) => ({
-            ...prev,
-            totalAmount: foundWorker?.price || 199,
-          }));
-          // get subcategories for this worker's category
-          const workerCat = catRes.data.find(
-            (c: any) => c.name === foundWorker?.category,
-          );
-          if (workerCat) setSubcategories(workerCat.subcategories || []);
-        } else {
-          const price = subcategoryPrices[categoryParam || ""] || 199;
-          setWorker({
-            name: `All ${categoryParam} Experts`,
-            category: categoryParam,
-            price: price,
-          });
-          setForm((prev: any) => ({ ...prev, totalAmount: price }));
-          // get subcategories for the category param
-          const cat = catRes.data.find((c: any) => c.name === categoryParam);
-          if (cat) setSubcategories(cat.subcategories || []);
-        }
-        setRazorpayKey(keyRes.data.key);
-      } catch (err) {
-        // silently ignore error
+    if (catRes.length > 0) {
+      if (!isBroadcast && workers.length > 0) {
+        const foundWorker = workers.find((w: any) => w._id === id);
+        setWorker(foundWorker);
+        setForm((prev: any) => ({
+          ...prev,
+          totalAmount: foundWorker?.price || 199,
+        }));
+        
+        const workerCat = catRes.find((c: any) => c.name === foundWorker?.category);
+        if (workerCat) setSubcategories(workerCat.subcategories || []);
+      } else if (isBroadcast) {
+        const price = subcategoryPrices[categoryParam || ""] || 199;
+        setWorker({
+          name: `All ${categoryParam} Experts`,
+          category: categoryParam,
+          price: price,
+        });
+        setForm((prev: any) => ({ ...prev, totalAmount: price }));
+        
+        const cat = catRes.find((c: any) => c.name === categoryParam);
+        if (cat) setSubcategories(cat.subcategories || []);
       }
-    };
-    fetchWorkerAndKey();
-  }, [id, navigate, isBroadcast, categoryParam]);
+    }
+  }, [id, navigate, isBroadcast, categoryParam, keyRes, catRes, workers, isAuthenticated, reduxRole]);
 
   // auto-geocoding
   useEffect(() => {
@@ -248,50 +256,37 @@ const Booking = () => {
     );
   };
 
-  const verifyPayment = useCallback(
-    async (response: any, bookingId: string) => {
-      try {
-        await API.post("/bookings/verify-payment", {
-          ...response,
-          bookingId,
-        });
-        toast.success("Payment Successful!");
-        navigate(`/tracking/${bookingId}`);
-      } catch (err: any) {
-        console.error(err);
-        toast.error(
-          err.response?.data?.message || "Payment verification failed",
-        );
-      } finally {
-        setLoading(false);
-      }
+  const verifyPaymentMutation = useMutation({
+    mutationFn: (data: { response: any, bookingId: string }) => bookingService.verifyPayment({
+      ...data.response,
+      bookingId: data.bookingId
+    }),
+    onSuccess: (_, variables) => {
+      toast.success("Payment Successful!");
+      setLoading(false);
+      navigate(`/tracking/${variables.bookingId}`);
     },
-    [navigate],
+    onError: (err: any) => {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Payment verification failed");
+      setLoading(false);
+    }
+  });
+
+  const verifyPayment = useCallback(
+    (response: any, bookingId: string) => {
+      setLoading(true);
+      verifyPaymentMutation.mutate({ response, bookingId });
+    },
+    [verifyPaymentMutation],
   );
 
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const { data } = await API.post("/bookings", {
-        worker: isBroadcast ? null : id,
-        ...form,
-        service:
-          form.subcategory ||
-          categoryParam ||
-          worker?.category ||
-          "General Service",
-        amount: form.totalAmount + 49, // price + visiting charge
-        userLocation: {
-          type: "Point",
-          coordinates: [selectedLocation[1], selectedLocation[0]], // [lng, lat] format for geojson
-        },
-        category: categoryParam || worker?.category,
-      });
-
+  const bookingMutation = useMutation({
+    mutationFn: bookingService.createBooking,
+    onSuccess: (data) => {
       if (form.paymentMethod === "COD") {
         toast.success("Booking successful!");
+        setLoading(false);
         navigate(`/tracking/${data.booking._id}`);
         return;
       }
@@ -300,30 +295,56 @@ const Booking = () => {
       const options = {
         key: razorpayKey,
         amount: data.order.amount,
-        currency: data.order.currency,
+        currency: "INR",
         name: "WorkEase",
-        description: `Booking for ${worker?.name}`,
+        description: "Service Booking Payment",
         order_id: data.order.id,
-        handler: (response: any) => verifyPayment(response, data.bookingId),
+        handler: function (response: any) {
+          verifyPayment(response, data.booking._id);
+        },
         prefill: {
+          name: "User",
           contact: form.phone,
         },
         theme: {
-          color: "#f97316",
+          color: "#3b82f6",
         },
         modal: {
-          ondismiss: () => setLoading(false),
-        },
+          ondismiss: function() {
+            setLoading(false);
+            toast.error("Payment cancelled");
+          }
+        }
       };
 
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       setLoading(false);
-      toast.error(
-        err.response?.data?.message || "Booking failed. Please try again.",
-      );
+      toast.error(err.response?.data?.message || "Booking failed");
     }
+  });
+
+  const handleSubmit = (e: any) => {
+    e.preventDefault();
+    setLoading(true);
+
+    bookingMutation.mutate({
+      worker: isBroadcast ? null : id,
+      ...form,
+      service:
+        form.subcategory ||
+        categoryParam ||
+        worker?.category ||
+        "General Service",
+      amount: form.totalAmount + 49, // price + visiting charge
+      userLocation: {
+        type: "Point",
+        coordinates: [selectedLocation[1], selectedLocation[0]], // [lng, lat] format for geojson
+      },
+      category: categoryParam || worker?.category,
+    });
   };
 
   return (

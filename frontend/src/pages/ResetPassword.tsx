@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
-import API from "../api/axios";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "../services/auth.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Lock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
@@ -13,31 +14,38 @@ const ResetPassword = () => {
     const navigate = useNavigate();
 
     const [form, setForm] = useState({ password: "", confirmPassword: "" });
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const resetMutation = useMutation({
+        mutationFn: async () => {
+            if (role === "worker") {
+                return authService.resetPasswordWorker(token!, form);
+            } else {
+                return authService.resetPasswordUser(token!, form);
+            }
+        },
+        onSuccess: () => {
+            setSuccess(true);
+            setTimeout(() => navigate("/login"), 3000);
+        },
+        onError: (err: any) => {
+            setError(err.response?.data?.message || "Invalid or expired token. Please request a new link.");
+        }
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (form.password !== form.confirmPassword) {
             setError("Passwords do not match");
             return;
         }
 
-        setLoading(true);
         setError("");
-
-        try {
-            const endpoint = role === "worker" ? `/workers/reset-password/${token}` : `/auth/reset-password/${token}`;
-            await API.put(endpoint, form);
-            setSuccess(true);
-            setTimeout(() => navigate("/login"), 3000);
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Invalid or expired token. Please request a new link.");
-        } finally {
-            setLoading(false);
-        }
+        resetMutation.mutate();
     };
+
+    const loading = resetMutation.isPending;
 
     return (
         <div className="min-h-screen bg-primary">

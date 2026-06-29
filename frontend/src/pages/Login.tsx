@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import API from "../api/axios";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "../services/auth.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { Phone, Lock, CheckCircle2, Mail, User, Briefcase, AlertCircle, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAppDispatch } from "../hooks/storeHooks";
+import { loginSuccess } from "../features/auth/authSlice";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -13,35 +16,49 @@ const Login = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const [rejectionModal, setRejectionModal] = useState<{ show: boolean, reason: string }>({ show: false, reason: "" });
+  const dispatch = useAppDispatch();
 
-  const handleSubmit = async (e: any) => {
+  const workerLoginMutation = useMutation({
+    mutationFn: authService.loginWorker,
+    onSuccess: (res) => {
+      dispatch(loginSuccess({ token: res.token, workerId: res.worker.id, role: 'worker' }));
+      handleSuccess();
+    },
+    onError: handleError
+  });
+
+  const userLoginMutation = useMutation({
+    mutationFn: authService.loginUser,
+    onSuccess: (res) => {
+      dispatch(loginSuccess({ token: res.token, userId: res.user._id || res.user.id, role: 'user' }));
+      handleSuccess();
+    },
+    onError: handleError
+  });
+
+  function handleSuccess() {
+    setSuccess(true);
+    setTimeout(() => {
+      window.location.href = "/dashboard";
+    }, 1500);
+  }
+
+  function handleError(err: any) {
+    const msg = err.response?.data?.message || "Login failed. Please check your credentials.";
+    setError(msg);
+    
+    if (msg.includes("Account Rejected")) {
+      setRejectionModal({ show: true, reason: msg.split(": ")[1] || "Please contact admin for more details." });
+    }
+  }
+
+  const handleSubmit = (e: any) => {
     e.preventDefault();
     setError("");
-    try {
-      if (activeTab === "worker") {
-        const res = await API.post("/workers/login", { phone: form.phone, password: form.password });
-        localStorage.setItem("workerToken", res.data.token);
-        localStorage.setItem("workerId", res.data.worker.id);
-        localStorage.removeItem("userToken");
-        localStorage.removeItem("userId");
-      } else {
-        const res = await API.post("/auth/login", { email: form.email, password: form.password });
-        localStorage.setItem("userToken", res.data.token);
-        localStorage.setItem("userId", res.data.user._id || res.data.user.id);
-        localStorage.removeItem("workerToken");
-        localStorage.removeItem("workerId");
-      }
-      setSuccess(true);
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1500);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || "Login failed. Please check your credentials.";
-      setError(msg);
-      
-      if (msg.includes("Account Rejected")) {
-        setRejectionModal({ show: true, reason: msg.split(": ")[1] || "Please contact admin for more details." });
-      }
+    if (activeTab === "worker") {
+      workerLoginMutation.mutate({ phone: form.phone, password: form.password });
+    } else {
+      userLoginMutation.mutate({ email: form.email, password: form.password });
     }
   };
 

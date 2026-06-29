@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import socket from "../socket/socket";
 import { Navigation, Clock, Shield, ArrowLeft, Phone, MessageSquare } from "lucide-react";
@@ -8,8 +8,10 @@ import { MapContainer, TileLayer, Marker, Polyline, useMap } from "react-leaflet
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import ChatModal from "../components/ChatModal";
-import API from "../api/axios";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { bookingService } from "../services/booking.service";
 import toast from "react-hot-toast";
+import { useAppSelector } from "../hooks/storeHooks";
 
 // map marker icons
 const workerIcon = L.icon({
@@ -38,6 +40,7 @@ const RecenterMap = ({ center }: { center: [number, number] }) => {
 const Tracking = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     const [workerLocation, setWorkerLocation] = useState<[number, number] | null>(null);
     const workerLocRef = useRef<[number, number] | null>(null);
@@ -50,45 +53,37 @@ const Tracking = () => {
     const [watchId, setWatchId] = useState<number | null>(null);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [currentUserId, setCurrentUserId] = useState<string>("");
-    const [bookingData, setBookingData] = useState<any>(null);
     const [lastSocketLocation, setLastSocketLocation] = useState<[number, number] | null>(null);
+    const { userId: reduxUserId, workerId: reduxWorkerId } = useAppSelector((state) => state.auth);
 
 
-    const fetchBooking = useCallback(async () => {
-        try {
-            const res = await API.get(`/bookings/${id}`);
-            setBookingData(res.data);
-
-            if (res.data.worker && res.data.worker.location) {
-                const [lng, lat] = res.data.worker.location.coordinates;
-                if (lat && lng) {
-                    setWorkerLocation([lat, lng]);
-                }
-            }
-        } catch (err) {
-            console.error("Failed to fetch booking details:", err);
-        }
-    }, [id]);
+    const { data: bookingData } = useQuery({
+        queryKey: ["booking", id],
+        queryFn: () => bookingService.getBooking(id!),
+        enabled: !!id,
+    });
 
     useEffect(() => {
-        if (id) fetchBooking();
-    }, [id, fetchBooking]);
-
-    // figure out if current user is the worker or customer
-    useEffect(() => {
-        const workerId = localStorage.getItem("workerId");
-        const userId = localStorage.getItem("userId");
-
-        if (bookingData) {
-            if (workerId && bookingData.worker?._id === workerId) {
-                setIsWorker(true);
-                setCurrentUserId(workerId);
-            } else {
-                setIsWorker(false);
-                setCurrentUserId(userId || "");
+        if (bookingData?.worker?.location?.coordinates) {
+            const [lng, lat] = bookingData.worker.location.coordinates;
+            if (lat && lng) {
+                setWorkerLocation([lat, lng]);
             }
         }
     }, [bookingData]);
+
+    // figure out if current user is the worker or customer
+    useEffect(() => {
+        if (bookingData) {
+            if (reduxWorkerId && bookingData.worker?._id === reduxWorkerId) {
+                setIsWorker(true);
+                setCurrentUserId(reduxWorkerId);
+            } else {
+                setIsWorker(false);
+                setCurrentUserId(reduxUserId || "");
+            }
+        }
+    }, [bookingData, reduxWorkerId, reduxUserId]);
 
     // get user location from booking or fallback to GPS
     useEffect(() => {
@@ -135,8 +130,7 @@ const Tracking = () => {
                 toast.error("Booking has been cancelled.");
                 setTimeout(() => navigate("/dashboard"), 3000);
             } else if (status === "Accepted") {
-
-                fetchBooking();
+                queryClient.invalidateQueries({ queryKey: ["booking", id] });
             }
         });
 
@@ -144,7 +138,7 @@ const Tracking = () => {
             socket.off("receive-location");
             socket.off("status-updated");
         };
-    }, [id, navigate, fetchBooking]);
+    }, [id, navigate, queryClient]);
 
 
     useEffect(() => {

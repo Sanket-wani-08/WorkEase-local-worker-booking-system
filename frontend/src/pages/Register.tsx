@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api/axios";
+import { useMutation } from "@tanstack/react-query";
+import { authService } from "../services/auth.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { User, Mail, Phone, Lock, CheckCircle2 } from "lucide-react";
@@ -20,7 +21,21 @@ const Register = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const registerMutation = useMutation({
+    mutationFn: authService.registerUser,
+    onSuccess: () => {
+      setSuccess(true);
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
+    },
+    onError: (err: any) => {
+      console.error(err);
+      setError(err.response?.data?.message || "Registration failed. Please check all fields.");
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -29,16 +44,7 @@ const Register = () => {
       return;
     }
 
-    try {
-      await API.post("/auth/register", form);
-      setSuccess(true);
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-    } catch (err: any) {
-      console.error(err);
-      setError(err.response?.data?.message || "Registration failed. Please check all fields.");
-    }
+    registerMutation.mutate(form);
   };
 
   if (success) {

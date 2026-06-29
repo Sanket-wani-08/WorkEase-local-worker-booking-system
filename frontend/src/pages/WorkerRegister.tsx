@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import API from "../api/axios";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { categoryService } from "../services/category.service";
+import { workerService } from "../services/worker.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { User, Phone, Briefcase, FileText, Upload, CheckCircle2, Lock, CreditCard } from "lucide-react";
@@ -21,26 +23,19 @@ const WorkerRegister = () => {
   });
   const [aadhaarImage, setAadhaarImage] = useState<File | null>(null);
   const [success, setSuccess] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [subcategories, setSubcategories] = useState<string[]>([]);
-  const [loadingCats, setLoadingCats] = useState(true);
 
-  // fetch categories from backend
+  const { data: categories = [], isLoading: loadingCats, isError } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryService.getCategories
+  });
+
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const { data } = await API.get("/categories");
-        setCategories(data);
-        setLoadingCats(false);
-      } catch (error) {
-        console.error("Failed to load categories:", error);
-        toast.error("Failed to load categories");
-        setLoadingCats(false);
-      }
-    };
-    fetchCategories();
-  }, []);
+    if (isError) {
+      toast.error("Failed to load categories");
+    }
+  }, [isError]);
 
   const handleCategoryChange = (e: any) => {
     const value = e.target.value;
@@ -51,7 +46,19 @@ const WorkerRegister = () => {
     setSubcategories(selected ? selected.subcategories : []);
   };
 
-  const handleSubmit = async (e: any) => {
+  const registerMutation = useMutation({
+    mutationFn: workerService.registerWorker,
+    onSuccess: () => {
+      toast.success("Registration Successful!");
+      setSuccess(true);
+    },
+    onError: (err: any) => {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Registration failed. Please check all fields.");
+    }
+  });
+
+  const handleSubmit = (e: any) => {
     e.preventDefault();
 
     const data = new FormData();
@@ -59,18 +66,7 @@ const WorkerRegister = () => {
 
     if (aadhaarImage) data.append("aadhaarImage", aadhaarImage);
 
-    try {
-      await API.post("/workers/register", data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      toast.success("Registration Successful!");
-      setSuccess(true);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "Registration failed. Please check all fields.");
-    }
+    registerMutation.mutate(data);
   };
 
   if (success) {

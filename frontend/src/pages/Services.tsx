@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api/axios";
+import { useQuery } from "@tanstack/react-query";
+import { categoryService } from "../services/category.service";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { 
@@ -42,23 +43,11 @@ const getCategoryTheme = (name: string) => {
 };
 
 const Services = () => {
-  const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const { data } = await API.get("/categories");
-        setCategories(data);
-      } catch (error) {
-        console.error("Error fetching categories:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCategories();
-  }, []);
+  const { data: categories = [], isLoading: loading } = useQuery({
+    queryKey: ["categories"],
+    queryFn: categoryService.getCategories
+  });
 
   return (
     <div className="min-h-screen bg-primary">

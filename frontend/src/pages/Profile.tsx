@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import API from "../api/axios";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { userService } from "../services/user.service";
+import { workerService } from "../services/worker.service";
+import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { User, Camera, Mail, Phone, Briefcase, Star, MapPin, Loader2, Save } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAppSelector } from "../hooks/storeHooks";
 
 const Profile = () => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [profile, setProfile] = useState<any>(null);
     const [role, setRole] = useState<"worker" | "user" | null>(null);
-    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
@@ -21,46 +25,43 @@ const Profile = () => {
         subcategory: "",
         experience: ""
     });
+    const { isAuthenticated, role: reduxRole } = useAppSelector((state) => state.auth);
+
+    const isWorker = reduxRole === 'worker';
+
+    const { data: profileRes, isLoading: loading } = useQuery({
+        queryKey: ["profile", reduxRole],
+        queryFn: isWorker ? workerService.getWorkerProfile : userService.getUserProfile,
+        enabled: !!isAuthenticated && !!reduxRole,
+    });
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const userToken = localStorage.getItem("userToken");
-                const workerToken = localStorage.getItem("workerToken");
+        if (!isAuthenticated) {
+            navigate("/login");
+            return;
+        }
 
-                if (!userToken && !workerToken) {
-                    navigate("/login");
-                    return;
-                }
-
-                if (workerToken) {
-                    const res = await API.get("/workers/me");
-                    setProfile(res.data);
-                    setRole("worker");
-                    setForm({
-                        name: res.data.name,
-                        phone: res.data.phone,
-                        subcategory: res.data.subcategory || ""
-                    });
-                } else {
-                    const res = await API.get("/user/me");
-                    setProfile(res.data);
-                    setRole(res.data.role === "admin" ? "admin" as any : "user");
-                    setForm((prev: any) => ({
-                        ...prev,
-                        name: res.data.name || "",
-                        phone: res.data.phone || ""
-                    }));
-                }
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
+        if (profileRes) {
+            setProfile(profileRes);
+            if (isWorker) {
+                setRole("worker");
+                setForm({
+                    name: profileRes.name || "",
+                    phone: profileRes.phone || "",
+                    category: profileRes.category || "",
+                    subcategory: profileRes.subcategory || "",
+                    experience: profileRes.experience || ""
+                });
+            } else {
+                setRole(profileRes.role === "admin" ? "admin" : "user");
+                setForm((prev: any) => ({
+                    ...prev,
+                    name: profileRes.name || "",
+                    phone: profileRes.phone || ""
+                }));
             }
-        };
-
-        fetchProfile();
-    }, [navigate]);
+        }
+    }, [profileRes, isAuthenticated, navigate, isWorker]);
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -70,36 +71,40 @@ const Profile = () => {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setSaving(true);
-        try {
-            const formData = new FormData();
-            formData.append("name", form.name);
-            formData.append("phone", form.phone);
-            
-            if (role === "worker") {
-                formData.append("experience", form.experience);
-                formData.append("category", form.category);
-                formData.append("subcategory", form.subcategory);
-            }
-
-            if (imageFile) {
-                formData.append("profileImage", imageFile);
-            }
-
-            const endpoint = role === "worker" ? "/workers/me" : "/user/me";
-            await API.put(endpoint, formData, {
-                headers: { "Content-Type": "multipart/form-data" }
-            });
-
-            alert("Profile updated successfully!");
-            window.location.reload();
-        } catch (err: any) {
-            alert(err.response?.data?.message || "Update failed");
-        } finally {
+    const updateProfileMutation = useMutation({
+        mutationFn: (formData: FormData) => {
+            return isWorker ? workerService.updateWorkerProfile(formData) : userService.updateUserProfile(formData);
+        },
+        onSuccess: () => {
+            toast.success("Profile updated successfully!");
+            queryClient.invalidateQueries({ queryKey: ["profile", reduxRole] });
+            setSaving(false);
+        },
+        onError: (err: any) => {
+            toast.error(err.response?.data?.message || "Update failed");
             setSaving(false);
         }
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setSaving(true);
+        
+        const formData = new FormData();
+        formData.append("name", form.name);
+        formData.append("phone", form.phone);
+        
+        if (role === "worker") {
+            formData.append("experience", form.experience);
+            formData.append("category", form.category);
+            formData.append("subcategory", form.subcategory);
+        }
+
+        if (imageFile) {
+            formData.append("profileImage", imageFile);
+        }
+
+        updateProfileMutation.mutate(formData);
     };
 
     if (loading) {
