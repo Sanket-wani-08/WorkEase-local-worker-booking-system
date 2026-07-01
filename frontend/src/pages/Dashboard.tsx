@@ -130,10 +130,10 @@ const Dashboard = () => {
   const bookings = role === 'admin' ? allBookings : role === 'worker' ? workerBookings : userBookings;
   const stats = role === 'admin' ? adminStats : role === 'worker' ? workerStats : null;
 
-  const loading = profileLoading || 
-                  (role === 'admin' && (adminStatsLoading || pendingLoading || allBookingsLoading || categoriesLoading)) ||
-                  (role === 'worker' && (workerBookingsLoading || workerStatsLoading)) ||
-                  (role === 'user' && userBookingsLoading);
+  const loading = profileLoading ||
+    (role === 'admin' && (adminStatsLoading || pendingLoading || allBookingsLoading || categoriesLoading)) ||
+    (role === 'worker' && (workerBookingsLoading || workerStatsLoading)) ||
+    (role === 'user' && userBookingsLoading);
 
   const verifyWorkerMutation = useMutation({
     mutationFn: (id: string) => workerService.verifyWorker(id),
