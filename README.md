@@ -1,98 +1,214 @@
 # WorkEase – Local Worker Booking System
 
-WorkEase is a full-stack MERN-based local worker booking platform that connects users with skilled workers for home and personal services. The platform provides real-time tracking, secure authentication, online payments, booking management, and a modern responsive user interface.
+A production-ready full-stack MERN application that connects users with verified local service providers for home and local services. The platform enables users to discover nearby workers, book services, make secure online payments, communicate in real-time, and track booking progress, while providing dedicated dashboards for workers and administrators.
 
 ---
 
-## Features
-
-* JWT Authentication & Authorization
-* Worker Profile Management
-* Service Booking System
-* Real-Time Worker Tracking
-* Razorpay Payment Integration
-* Live Notifications
-* Real-Time Communication using Socket.IO
-* Review & Rating System
-* Fully Responsive Design
-* Fast and Modern UI/UX
+## Live Demo
+https://work-ease-local-worker-booking-syst.vercel.app/
 
 ---
 
-## Service Categories
+## Overview
 
-* Home Services
-* Household Work
-* Pick & Drop Services
-* Personal Assistance
-* Roadside Assistance
-* Home Appliances Repair
+WorkEase is designed to simplify the process of hiring trusted local workers by providing a secure and user-friendly booking platform. The application supports multiple user roles, real-time communication, secure authentication, online payments, location-based services, and administrative management.
+
+The project follows modern React development practices by integrating Redux Toolkit, TanStack Query, React Hook Form, and Yup while maintaining a scalable full-stack architecture.
 
 ---
 
-## Tech Stack
+## Key Features
+
+### Authentication & Authorization
+
+- Secure JWT Authentication
+- Cookie-Based Authentication
+- Password Encryption using bcryptjs
+- Role-Based Authorization
+- Protected Routes
+- Persistent User Sessions
+
+---
+
+### User Features
+
+- User Registration & Login
+- Update Profile
+- Search Local Workers
+- Browse Categories
+- View Worker Profiles
+- Book Services
+- Booking History
+- Cancel Bookings
+- Submit Reviews & Ratings
+- Real-Time Notifications
+- Real-Time Chat
+- Live Booking Updates
+
+---
+
+### Worker Features
+
+- Worker Registration
+- Profile Management
+- Upload Identity & Profile Images
+- Service Pricing Management
+- Accept or Reject Bookings
+- Booking History
+- Earnings Dashboard
+- Real-Time Booking Updates
+
+---
+
+### Admin Features
+
+- Dashboard Analytics
+- Worker Verification
+- User Management
+- Booking Management
+- Category Management
+- Review Monitoring
+- Platform Statistics
+
+---
+
+### Payment Features
+
+- Razorpay Payment Gateway Integration
+- Cash on Delivery (COD)
+- Payment Status Tracking
+- Booking Confirmation
+
+---
+
+### Real-Time Features
+
+- Socket.IO Integration
+- Real-Time Chat
+- Booking Status Updates
+- Instant Notifications
+
+---
+
+### Location Features
+
+- HTML5 Geolocation API
+- React Leaflet Maps
+- OSRM Route Integration
+- Worker Location Tracking
+
+---
+
+### Media Management
+
+- Cloudinary Image Upload
+- Secure File Storage
+- Worker Identity Verification
+
+---
+
+## Technology Stack
 
 ### Frontend
 
-* React.js
-* TypeScript
-* Tailwind CSS
-* Axios
-* React Router
-* Framer Motion
-* React Leaflet
+- React.js
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router DOM
+- Redux Toolkit
+- TanStack Query
+- React Hook Form
+- Yup
+- Axios
+- Framer Motion
+- React Leaflet
+- Recharts
+- Lucide React
 
 ### Backend
 
-* Node.js
-* Express.js
-* MongoDB
-* Mongoose
-* JWT Authentication
-* Socket.IO
+- Node.js
+- Express.js
+- MongoDB
+- Mongoose
+- JWT Authentication
+- bcryptjs
+- Socket.IO
+- Multer
+- Cloudinary
+- Razorpay
+- Cookie Parser
+- CORS
 
-### Payment Gateway
+### Tools
 
-* Razorpay
-
-### APIs & Services
-
-* HTML5 Geolocation API
-* OSRM API
-
----
-
-## Real-Time Tracking System
-
-WorkEase provides live worker tracking using:
-
-* HTML5 Geolocation API
-* Socket.IO Real-Time Updates
-* OSRM Route Visualization
-* React Leaflet Maps
-* ETA and Distance Calculation
+- Git
+- GitHub
+- Docker
+- Postman
+- Vercel
+- Render
 
 ---
 
 ## Project Structure
 
-```bash
-WorkEase-local-worker-booking-system/
+```
+WorkEase
 │
-├── frontend/
-│   ├── public/
-│   ├── src/
+├── frontend
+│   ├── src
+│   │   ├── assets
+│   │   ├── components
+│   │   ├── features
+│   │   ├── hooks
+│   │   ├── layouts
+│   │   ├── pages
+│   │   ├── routes
+│   │   ├── schemas
+│   │   ├── services
+│   │   ├── store
+│   │   ├── types
+│   │   └── utils
 │   └── package.json
 │
-├── backend/
-│   ├── config/
-│   ├── controllers/
-│   ├── middleware/
-│   ├── models/
-│   ├── routes/
-│   └── server.js
+├── backend
+│   ├── config
+│   ├── controllers
+│   ├── middleware
+│   ├── models
+│   ├── routes
+│   ├── services
+│   ├── sockets
+│   ├── utils
+│   └── package.json
 │
 └── README.md
+```
+
+---
+
+## System Architecture
+
+```
+                    React + TypeScript
+                           │
+          Redux Toolkit + TanStack Query
+                           │
+                 React Hook Form + Yup
+                           │
+                         Axios
+                           │
+                    Express.js API
+                           │
+        ┌──────────────┬───────────────┐
+        │              │               │
+    MongoDB       Socket.IO      Cloudinary
+        │              │               │
+        └──────────────┼───────────────┘
+                       │
+                   Razorpay
 ```
 
 ---
@@ -102,101 +218,140 @@ WorkEase-local-worker-booking-system/
 ### Clone Repository
 
 ```bash
-git clone https://github.com/Sanket-wani-08/WorkEase-local-worker-booking-system.git
+git clone https://github.com/yourusername/workease.git
 ```
 
----
-
-## Frontend Setup
+### Frontend
 
 ```bash
 cd frontend
+
 npm install
+
 npm run dev
 ```
 
----
-
-## Backend Setup
+### Backend
 
 ```bash
 cd backend
+
 npm install
-npm start
+
+npm run dev
 ```
 
 ---
 
 ## Environment Variables
 
-Create a `.env` file inside the backend folder:
+Create a `.env` file inside the backend folder.
 
 ```env
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_secret_key
-RAZORPAY_KEY_ID=your_key
-RAZORPAY_SECRET=your_secret
-CLIENT_URL=http://localhost:5173
+PORT=
+
+MONGO_URI=
+
+JWT_SECRET=
+
+CLOUDINARY_CLOUD_NAME=
+
+CLOUDINARY_API_KEY=
+
+CLOUDINARY_API_SECRET=
+
+RAZORPAY_KEY_ID=
+
+RAZORPAY_KEY_SECRET=
+
+CLIENT_URL=
 ```
 
 ---
 
-## Screenshots
+## API Modules
 
-### Home Page
+- Authentication
+- Users
+- Workers
+- Categories
+- Bookings
+- Reviews
+- Notifications
+- Messages
+- Dashboard
+- Payments
 
-```bash
-frontend/public/screenshots/home.png
-```
+---
 
-### Booking Page
+## Frontend Architecture
 
-```bash
-frontend/public/screenshots/booking.png
-```
+The frontend follows a modular and scalable architecture.
 
-### Worker Dashboard
+- Feature-Based Folder Structure
+- Redux Toolkit for Global State
+- TanStack Query for Server State
+- React Hook Form for Forms
+- Yup Schema Validation
+- Reusable Components
+- Protected Routes
+- Service Layer using Axios
+- TypeScript Interfaces
+- Custom Hooks
 
-```bash
-frontend/public/screenshots/dashboard.png
-```
+---
 
-### Live Tracking
+## Security Features
 
-```bash
-frontend/public/screenshots/tracking.png
-```
+- JWT Authentication
+- Role-Based Authorization
+- Password Hashing
+- Secure Cookies
+- Protected API Routes
+- Request Validation
+- Image Upload Validation
+
+---
+
+## Performance Optimizations
+
+- Redux Toolkit
+- TanStack Query Caching
+- Lazy Loading
+- Code Splitting
+- React Memoization
+- Optimized Component Rendering
+- Reusable Hooks
+- Schema Validation
+- Optimized API Calls
 
 ---
 
 ## Future Enhancements
 
-* AI-Based Worker Recommendations
-* Video Calling Support
-* In-App Chat System
-* Multi-Language Support
-* Push Notifications
-* Advanced Analytics Dashboard
+- Push Notifications
+- Progressive Web App (PWA)
+- AI-Based Worker Recommendation
+- Email Notifications
+- Multi-Language Support
+- Unit & Integration Testing
+- Advanced Analytics
+- Mobile Application
 
 ---
 
 ## Author
 
-### Wani Sanket Rajeshbhai
+**Sanket Wani**
 
 Full Stack MERN Developer
-Gujarat Technological University
 
----
+GitHub: https://github.com/Sanket-wani-08
 
-## Connect With Me
-
-GitHub: [Sanket-wani-08 GitHub](https://github.com/Sanket-wani-08?utm_source=chatgpt.com)
-
-LinkedIn: [Sanket Wani LinkedIn](https://www.linkedin.com/in/sanket-wani-1a494221a/?utm_source=chatgpt.com)
+LinkedIn: https://www.linkedin.com/in/sanket-wani-1a494221a/
 
 ---
 
 ## License
 
-This project is licensed under the MIT License.
+This project is developed for educational and portfolio purposes.
